@@ -12,8 +12,13 @@
   "lang": "fr-FR",
   "categories": ["automobile", "education", "utilities"],
   "icons": [
-    { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     { "src": "icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ],
+  "screenshots": [
+    { "src": "icons/screen-540.png", "sizes": "540x720", "type": "image/png", "form_factor": "narrow", "label": "Diagnostic AutoDiag Pro" },
+    { "src": "icons/screen-1280.png", "sizes": "1280x720", "type": "image/png", "form_factor": "wide", "label": "AutoDiag Pro desktop" }
   ],
   "shortcuts": [
     { "name": "Recherche rapide", "url": "./index.html", "description": "Rechercher une panne" }
