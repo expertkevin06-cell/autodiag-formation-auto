@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Générateur d'icônes AutoDiag Pro</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f3f4f6;text-align:center;padding:2rem}
+  canvas{border:1px solid #ccc;margin:1rem;border-radius:12px}
+  a{display:inline-block;margin:1rem;padding:1rem 2rem;background:#1e3a8a;color:#fff;
+    border-radius:8px;text-decoration:none;font-weight:bold}
+  a:hover{background:#1e293b}
+</style>
+</head>
+<body>
+<h1>🎨 Générateur d'icônes AutoDiag Pro</h1>
+<p>Cliquez sur chaque bouton pour télécharger une icône PNG valide.</p>
+<canvas id="c192" width="192" height="192"></canvas>
+<canvas id="c512" width="512" height="512"></canvas>
+<br>
+<a id="d192" download="icon-192.png">⬇️ Télécharger icon-192.png</a>
+<a id="d512" download="icon-512.png">⬇️ Télécharger icon-512.png</a>
+
+<script>
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r);
+  ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);
+  ctx.arcTo(x,y,x+w,y,r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+function drawIcon(canvas){
+  const s = canvas.width;
+  const u = s/512;
+  const ctx = canvas.getContext('2d');
+
+  // Fond dégradé bleu
+  const g = ctx.createLinearGradient(0,0,s,s);
+  g.addColorStop(0,'#1e3a8a');
+  g.addColorStop(1,'#3b82f6');
+  ctx.fillStyle = g;
+  ctx.fillRect(0,0,s,s);
+
+  // Carrosserie SUV (silhouette)
+  ctx.fillStyle = '#0b1220';
+  roundRect(ctx, 56*u, 240*u, 400*u, 120*u, 34*u);
+  ctx.beginPath();
+  ctx.moveTo(105*u,255*u);
+  ctx.lineTo(160*u,160*u);
+  ctx.lineTo(335*u,160*u);
+  ctx.lineTo(405*u,255*u);
+  ctx.closePath();
+  ctx.fill();
+
+  // Vitres
+  ctx.fillStyle = '#93c5fd';
+  ctx.beginPath();
+  ctx.moveTo(170*u,175*u); ctx.lineTo(250*u,175*u); ctx.lineTo(250*u,245*u); ctx.lineTo(128*u,245*u);
+  ctx.closePath(); ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(265*u,175*u); ctx.lineTo(325*u,175*u); ctx.lineTo(382*u,245*u); ctx.lineTo(265*u,245*u);
+  ctx.closePath(); ctx.fill();
+
+  // Roues
+  ctx.fillStyle = '#0b1220';
+  ctx.beginPath(); ctx.arc(150*u,368*u,58*u,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(362*u,368*u,58*u,0,7); ctx.fill();
+  ctx.fillStyle = '#e5e7eb';
+  ctx.beginPath(); ctx.arc(150*u,368*u,26*u,0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc(362*u,368*u,26*u,0,7); ctx.fill();
+
+  // Clé à molette (badge diagnostic)
+  ctx.save();
+  ctx.translate(392*u,120*u);
+  ctx.rotate(-0.6);
+  ctx.font = `${150*u}px serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('🔧',0,0);
+  ctx.restore();
+
+  // Texte
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${58*u}px Arial`;
+  ctx.textAlign='center';
+  ctx.fillText('AUTODIAG', s/2, 470*u);
+}
+
+const c192 = document.getElementById('c192');
+const c512 = document.getElementById('c512');
+drawIcon(c192);
+drawIcon(c512);
+document.getElementById('d192').href = c192.toDataURL('image/png');
+document.getElementById('d512').href = c512.toDataURL('image/png');
+</script>
+</body>
+</html>
