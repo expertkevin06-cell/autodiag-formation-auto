@@ -506,3 +506,9 @@ footer .small {
     display: none;
   }
 }
+/* ===== AJOUTS v2.0 ===== */
+.engine-info { border-left: 4px solid var(--accent); }
+.engine-info h3 { margin: 0.75rem 0 0.25rem; color: var(--primary); font-size: 1rem; }
+.engine-info ul { padding-left: 1.25rem; margin-bottom: 0.5rem; }
+.campaign-card { background:#fff7ed; border:1px solid #fed7aa; border-radius:8px; padding:0.75rem; margin:0.5rem 0; }
+.campaign-card p { font-size: 0.875rem; }
