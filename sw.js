@@ -1,8 +1,9 @@
-const CACHE_NAME = 'autodiag-pro-v5';
+const CACHE_NAME = 'autodiag-pro-v6';
 const ASSETS = [
   './','./index.html','./manifest.json','./css/styles.css',
   './js/app.js','./js/db.js','./js/data.js','./js/filters.js','./js/backup.js','./js/admin.js',
-  './icons/icon.svg'
+  './icons/icon.svg','./icons/icon-192.png','./icons/icon-512.png',
+  './icons/screen-540.png','./icons/screen-1280.png'
 ];
 
 self.addEventListener('install', (e) => {
