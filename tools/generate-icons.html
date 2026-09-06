@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Générateur PNG AutoDiag Pro</title>
+<style>
+  body{font-family:Arial,sans-serif;background:#f3f4f6;text-align:center;padding:1rem}
+  canvas{border:1px solid #ccc;margin:.5rem;border-radius:8px;max-width:90vw}
+  button{display:block;margin:.6rem auto;padding:.9rem 1.6rem;background:#1e3a8a;color:#fff;border:none;border-radius:8px;font-weight:bold;font-size:1rem}
+</style>
+</head>
+<body>
+<h1>🎨 Générateur de VRAIS PNG</h1>
+<p>Appuyez sur chaque bouton : le PNG valide sera téléchargé sur votre appareil.</p>
+<div id="wrap"></div>
+<script>
+function makeCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;document.getElementById('wrap').appendChild(c);return c;}
+function bg(ctx,w,h){const g=ctx.createLinearGradient(0,0,w,h);g.addColorStop(0,'#1e3a8a');g.addColorStop(1,'#3b82f6');ctx.fillStyle=g;ctx.fillRect(0,0,w,h);}
+function car(ctx,s){
+  const u=s/512;
+  ctx.fillStyle='#0b1220';
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(56*u,240*u,400*u,120*u,34*u); else ctx.rect(56*u,240*u,400*u,120*u);
+  ctx.fill();
+  ctx.beginPath();ctx.moveTo(105*u,255*u);ctx.lineTo(160*u,160*u);ctx.lineTo(335*u,160*u);ctx.lineTo(405*u,255*u);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#93c5fd';
+  ctx.beginPath();ctx.moveTo(170*u,175*u);ctx.lineTo(250*u,175*u);ctx.lineTo(250*u,245*u);ctx.lineTo(128*u,245*u);ctx.closePath();ctx.fill();
+  ctx.beginPath();ctx.moveTo(265*u,175*u);ctx.lineTo(325*u,175*u);ctx.lineTo(382*u,245*u);ctx.lineTo(265*u,245*u);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#0b1220';
+  ctx.beginPath();ctx.arc(150*u,368*u,58*u,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(362*u,368*u,58*u,0,7);ctx.fill();
+  ctx.fillStyle='#e5e7eb';
+  ctx.beginPath();ctx.arc(150*u,368*u,26*u,0,7);ctx.fill();
+  ctx.beginPath();ctx.arc(362*u,368*u,26*u,0,7);ctx.fill();
+}
+function icon(ctx,s){
+  bg(ctx,s,s); car(ctx,s);
+  ctx.fillStyle='#fff'; ctx.font='bold '+(s*0.09)+'px Arial'; ctx.textAlign='center';
+  ctx.fillText('AUTODIAG', s/2, s*0.95);
+}
+function download(canvas,filename){
+  canvas.toBlob(function(blob){
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download=filename;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),4000);
+  },'image/png');
+}
+[{s:192,f:'icon-192.png'},{s:512,f:'icon-512.png'}].forEach(it=>{
+  const c=makeCanvas(it.s,it.s);
+  icon(c.getContext('2d'),it.s);
+  const b=document.createElement('button');
+  b.textContent='⬇️ Télécharger '+it.f;
+  b.onclick=()=>download(c,it.f);
+  document.getElementById('wrap').appendChild(b);
+});
+</script>
+</body>
+</html>
