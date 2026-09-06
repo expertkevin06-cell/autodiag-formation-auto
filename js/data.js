@@ -1,7 +1,7 @@
 /**
- * Base de données AutoDiag Pro - Version enrichie
+ * Base de données AutoDiag Pro - v2.1 (CORRIGÉE)
  * Marques complètes + motorisations avec puissances + codes défauts
- * + Bulletins techniques (TSB) + Campagnes de rappel
+ * + Bulletins techniques (TSB) + Campagnes de rappel + Composants
  */
 
 // Helper compact pour les motorisations
@@ -11,16 +11,16 @@ function E(name,type,ch,kw,code,years,issues,recalls){
 
 const AUTO_DATA = {
 
+  // ===== MARQUES & MODÈLES =====
   brands: {
-    // ===== FRANÇAISES =====
+    // FRANÇAISES
     "Renault": { country:"FR", models:["Clio","Twingo","Megane","Scenic","Espace","Captur","Kadjar","Austral","Koleos","Arkana","Talisman","Kangoo","Trafic","Master","Zoe","Megane E-Tech"], engines:["essence","diesel","hybride","electrique"] },
     "Peugeot": { country:"FR", models:["108","208","2008","308","3008","408","508","5008","Partner","Rifter","Expert","Traveller","Boxer","e-208","e-2008","e-308","e-3008","iOn"], engines:["essence","diesel","hybride","electrique"] },
     "Citroën": { country:"FR", models:["C1","C3","C3 Aircross","C4","C4 X","C5 Aircross","C5 X","Berlingo","Jumpy","SpaceTourer","Jumper","ë-C3","ë-C4","Ami"], engines:["essence","diesel","hybride","electrique"] },
     "DS": { country:"FR", models:["DS3 Crossback","DS4","DS7","DS9","E-Tense"], engines:["essence","diesel","hybride"] },
     "Alpine": { country:"FR", models:["A110"], engines:["essence"] },
     "Dacia": { country:"RO", models:["Sandero","Logan","Duster","Jogger","Spring","Lodgy","Dokker"], engines:["essence","diesel","hybride","electrique"] },
-
-    // ===== EUROPÉENNES =====
+    // EUROPÉENNES
     "Volkswagen": { country:"DE", models:["Up!","Polo","Golf","Passat","Arteon","T-Cross","T-Roc","Tiguan","Touareg","Taigo","ID.3","ID.4","ID.5","ID.Buzz","Caddy","Transporter"], engines:["essence","diesel","hybride","electrique"] },
     "BMW": { country:"DE", models:["Série 1","Série 2","Série 3","Série 4","Série 5","Série 7","X1","X2","X3","X4","X5","X6","X7","Z4","i3","i4","iX","iX1","iX3"], engines:["essence","diesel","hybride","electrique"] },
     "Mercedes-Benz": { country:"DE", models:["Classe A","Classe B","Classe C","Classe E","Classe S","CLA","GLA","GLB","GLC","GLE","GLS","EQA","EQB","EQC","EQE","EQS","Citan","Vito","Sprinter"], engines:["essence","diesel","hybride","electrique"] },
@@ -40,8 +40,7 @@ const AUTO_DATA = {
     "Jaguar": { country:"UK", models:["XE","XF","F-Pace","E-Pace","I-Pace"], engines:["essence","diesel","electrique"] },
     "Land Rover": { country:"UK", models:["Defender","Discovery","Discovery Sport","Range Rover","Range Rover Evoque","Range Rover Sport","Velar"], engines:["essence","diesel","hybride"] },
     "Smart": { country:"DE", models:["ForTwo","ForFour","#1","#3"], engines:["essence","electrique"] },
-
-    // ===== ASIATIQUES =====
+    // ASIATIQUES
     "Toyota": { country:"JP", models:["Aygo","Yaris","Yaris Cross","Corolla","Camry","Prius","C-HR","RAV4","Highlander","Land Cruiser","Hilux","Proace","bZ4X","Mirai"], engines:["essence","diesel","hybride","electrique"] },
     "Honda": { country:"JP", models:["Civic","CR-V","Jazz","HR-V","ZR-V","e","City"], engines:["essence","hybride","electrique"] },
     "Nissan": { country:"JP", models:["Micra","Juke","Qashqai","X-Trail","Leaf","Ariya","Navara","Townstar"], engines:["essence","diesel","hybride","electrique"] },
@@ -53,8 +52,7 @@ const AUTO_DATA = {
     "Kia": { country:"KR", models:["Picanto","Rio","Ceed","Stonic","Niro","Sportage","Sorento","EV6","EV9","Soul"], engines:["essence","diesel","hybride","electrique"] },
     "Suzuki": { country:"JP", models:["Swift","Ignis","Vitara","S-Cross","Swace","Across","Jimny"], engines:["essence","hybride"] },
     "SsangYong": { country:"KR", models:["Tivoli","Korando","Rexton","Musso","Torres"], engines:["essence","diesel"] },
-
-    // ===== CHINOISES =====
+    // CHINOISES
     "MG": { country:"CN", models:["MG3","MG4","MG5","ZS","HS","Marvel R"], engines:["essence","hybride","electrique"] },
     "BYD": { country:"CN", models:["Atto 3","Dolphin","Seal","Han","Tang","Song Plus","Seal U"], engines:["electrique","hybride"] },
     "Aiways": { country:"CN", models:["U5","U6"], engines:["electrique"] },
@@ -67,8 +65,7 @@ const AUTO_DATA = {
     "Chery": { country:"CN", models:["Tiggo 7","Tiggo 8"], engines:["essence"] },
     "Omoda": { country:"CN", models:["5"], engines:["essence","electrique"] },
     "Jaecoo": { country:"CN", models:["7"], engines:["essence","hybride"] },
-
-    // ===== AMÉRICAINES =====
+    // AMÉRICAINES
     "Tesla": { country:"US", models:["Model 3","Model Y","Model S","Model X","Cybertruck"], engines:["electrique"] },
     "Jeep": { country:"US", models:["Renegade","Compass","Cherokee","Grand Cherokee","Wrangler","Avenger","Gladiator"], engines:["essence","diesel","hybride","electrique"] },
     "Chevrolet": { country:"US", models:["Camaro","Corvette","Equinox","Tahoe","Suburban","Bolt"], engines:["essence","hybride","electrique"] },
@@ -76,8 +73,41 @@ const AUTO_DATA = {
     "Cadillac": { country:"US", models:["Escalade","XT4","XT5","XT6","Lyriq"], engines:["essence","hybride","electrique"] },
     "Lincoln": { country:"US", models:["Corsair","Nautilus","Aviator","Navigator"], engines:["essence","hybride"] },
     "GMC": { country:"US", models:["Sierra","Yukon","Acadia","Hummer EV"], engines:["essence","diesel","electrique"] },
-    "RAM": { country:"US", models:["1500","2500","ProMaster"], engines:["essence","diesel"] },
-    "Ford US": { country:"US", models:["F-150","Lightning","Maverick"], engines:["essence","hybride","electrique"] }
+    "RAM": { country:"US", models:["1500","2500","ProMaster"], engines:["essence","diesel"] }
+  },
+
+  // ===== COMPOSANTS PAR TYPE DE PANNE =====
+  components: {
+    mecanique: [
+      "Courroie de distribution","Chaîne de distribution","Bielle","Vilebrequin","Piston","Segment","Soupape",
+      "Joint de culasse","Culasse","Bloc moteur","Injecteurs","Pompe à injection","Turbo","Compresseur",
+      "Filtre à particules (FAP)","Vanne EGR","Débitmètre","Sonde Lambda","Catalyseur","Échappement",
+      "Silencieux","Embrayage","Volant moteur","Boîte de vitesses","Différentiel","Cardan","Soufflet de cardan",
+      "Roulement de roue","Disque de frein","Plaquette de frein","Étrier de frein","Maître-cylindre",
+      "Flexible de frein","Direction assistée","Crémaillère","Rotule de direction","Triangle de suspension",
+      "Amortisseur","Ressort","Barre stabilisatrice","Silent bloc","Pompe à eau","Thermostat","Radiateur",
+      "Ventilateur","Liquide de refroidissement","Pompe à huile","Filtre à huile","Joint spi","Segmentation"
+    ],
+    electrique: [
+      "Batterie 12V","Alternateur","Démarreur","Faisceau électrique","Fusible","Relais","Bougies d'allumage",
+      "Bobine d'allumage","Câbles de bougie","Capteur PMH","Capteur de position arbre à cames",
+      "Capteur de température","Capteur de pression","Capteur de pression turbo","Sonde de température",
+      "Moteur de ventilateur","Moteur de lève-vitre","Moteur d'essuie-glace","Phares","Feux arrière",
+      "Feux de jour LED","Éclairage intérieur","Serrure électrique","Centralisation","Rétroviseurs électriques",
+      "Sièges chauffants","Lunette arrière chauffante","Prise 12V","Prise USB",
+      "Batterie haute tension (véhicule électrique)","Onduleur","Convertisseur DC/DC",
+      "Câbles haute tension","Connecteurs haute tension"
+    ],
+    electronique: [
+      "Calculateurs (ECU)","Boîtier moteur (ECU)","Boîtier ABS","Boîtier ESP","Boîtier airbag",
+      "Boîtier climatisation","Boîtier de servitude (BSI/BCM)","Combiné d'instruments","Écran tactile",
+      "Système multimédia","GPS / Navigation","Caméra de recul","Radars de stationnement","Caméras ADAS",
+      "Radar de régulateur adaptatif","Capteur d'angle de braquage","Capteur de pluie","Capteur de luminosité",
+      "Capteur de pression pneus (TPMS)","Transpondeur clé","Antenne démarreur","Module Bluetooth",
+      "Module WiFi","Module 4G/5G","Antenne GPS","Capteur de couple","Capteur de régime",
+      "Capteur de pression FAP","Capteur NOx","Sonde de température échappement",
+      "Transistor de puissance (véhicule électrique)","BMS (Battery Management System)"
+    ]
   },
 
   // ===== MOTORISATIONS DÉTAILLÉES PAR MODÈLE (puissances) =====
@@ -90,8 +120,8 @@ const AUTO_DATA = {
         E("1.2 PureTech 130","essence",130,96,"EB2ADT","2019+",["Courroie humide","Bougies"],["Extension garantie courroie"]),
         E("1.5 BlueHDi 100","diesel",100,75,"DV5RD","2018+",["Courroie 7mm→8mm","Régénérations FAP"],["Campagne courroie 8mm"]),
         E("1.6 BlueHDi 100","diesel",100,73,"DV6FD","2015-2018",["FAP/AdBlue"]),
-        E("e-208 136","electrique",136,100,"ZK01","2019-2023",["Batterie 50 kWh"]),
-        E("e-208 156","electrique",156,115,"ZK02","2023+",[])
+        E("e-208 136","electrique",136,100,"ZK01","2019-2023"),
+        E("e-208 156","electrique",156,115,"ZK02","2023+")
       ],
       "2008": [
         E("1.2 PureTech 100","essence",100,74,"EB2AD","2019+",["Courroie humide"]),
@@ -109,7 +139,7 @@ const AUTO_DATA = {
         E("1.6 THP 205","essence",205,151,"EP6FDTX","2015-2018",["Calamine soupapes"]),
         E("1.5 BlueHDi 130","diesel",130,96,"DV5RC","2018+",["Courroie 7mm→8mm","Régénérations FAP"],["Campagne courroie 8mm","MAJ logiciel FAP"]),
         E("1.6 BlueHDi 120","diesel",120,88,"DV6FC","2014-2018",["AdBlue","FAP"]),
-        E("2.0 BlueHDi 150","diesel",150,110,"DW10FD","2014-2018",["FAP","AdBlue"]),
+        E("2.0 BlueHDi 150","diesel",150,110,"DW10FD","2014-2018",["FAP"]),
         E("2.0 BlueHDi 180","diesel",180,133,"DW10FC","2014-2020",["FAP","Injecteurs"]),
         E("Hybrid 180","hybride",180,132,"EB2+MHEV","2021+"),
         E("Hybrid 225","hybride",225,165,"EP6+MHEV","2021+"),
@@ -547,6 +577,13 @@ const AUTO_DATA = {
       repairs:["Nettoyage/remplacement vanne EGR","Nettoyage conduits"],
       tsb:["1.5 dCi K9K: campagne contrôle EGR (C004)"],
       severity:"important", cost:"200-600€" },
+    { id:"F004", code:"P0420", title:"Catalyseur - Efficacité en dessous du seuil", type:"mecanique", component:"Catalyseur", brands:["ALL"], engines:["essence","diesel"],
+      symptoms:["Voyant moteur","Odeur œuf pourri","Perte puissance","Consommation accrue"],
+      causes:["Catalyseur usé","Sonde Lambda HS","Ratés persistants","Consommation huile"],
+      consequences:["Échec contrôle technique","Pollution excessive"],
+      diagnostics:["Test sondes Lambda","Mesure gaz échappement","Test température"],
+      repairs:["Remplacement catalyseur","Remplacement sondes Lambda"],
+      severity:"important", cost:"500-1500€" },
     { id:"F005", code:"P0299", title:"Turbo - Pression de suralimentation insuffisante", type:"mecanique", component:"Turbo", brands:["ALL"], engines:["diesel","essence"],
       symptoms:["Voyant moteur","Perte puissance","Sifflement anormal","Fumée noire/bleue","Consommation huile"],
       causes:["Fuites suralimentation","Wastegate bloquée","Turbo endommagé","Électrovanne HS","Intercooler percé"],
@@ -576,14 +613,36 @@ const AUTO_DATA = {
       diagnostics:["Test batterie","Test alternateur","Recherche fuite"],
       repairs:["Remplacement batterie/alternateur"],
       severity:"important", cost:"100-500€" },
+    { id:"F009", code:"P0234", title:"Turbo - Survitesse", type:"mecanique", component:"Turbo", brands:["ALL"], engines:["diesel","essence"],
+      symptoms:["Sifflement très aigu","Perte puissance","Fumée bleue","Consommation huile"],
+      causes:["Wastegate bloquée fermée","Électrovanne HS","Capteur pression turbo HS"],
+      consequences:["Casse turbo","Casse moteur possible"],
+      diagnostics:["Test électrovanne","Vérification wastegate","Test capteur pression"],
+      repairs:["Remplacement turbo/électrovanne/capteur"],
+      severity:"critique", cost:"1500-3500€" },
+    { id:"F010", code:"P0171", title:"Mélange trop pauvre (banque 1)", type:"electronique", component:"Injecteurs", brands:["ALL"], engines:["essence","flexfuel"],
+      symptoms:["Voyant moteur","Ralenti instable","Perte puissance","Calage","Claquements"],
+      causes:["Fuite de vide","Injecteurs bouchés","Pompe carburant faible","Filtre colmaté"],
+      consequences:["Surchauffe moteur","Dommages soupapes/pistons"],
+      diagnostics:["Test pression carburant","Recherche fuites vide","Test injecteurs"],
+      repairs:["Nettoyage/remplacement injecteurs","Remplacement pompe/filtre"],
+      severity:"important", cost:"200-800€" },
     { id:"F014", code:"P0A80", title:"Batterie haute tension - Remplacement requis", type:"electrique", component:"Batterie haute tension (véhicule électrique)", brands:["Tesla","Nissan","Renault","Toyota","Hyundai","Kia","Volkswagen"], engines:["electrique","hybride"],
       symptoms:["Voyant batterie HT","Autonomie réduite","Mode dégradé","Charge impossible"],
       causes:["Cellules défaillantes","Refroidissement HS","BMS HS","Vieillissement"],
       consequences:["Véhicule immobilisé","Charge impossible"],
       diagnostics:["Test équilibrage cellules","Test BMS","Mesure isolement"],
       repairs:["Remplacement batterie/modules","Réparation refroidissement"],
-      tsb:["Tesla: contrôle dégradation batterie (garantie 8 ans)","Zoe/Nissan Leaf: contrôle SOH batterie"],
+      tsb:["Tesla: contrôle dégradation batterie (garantie 8 ans)","Zoe/Leaf: contrôle SOH batterie"],
       severity:"critique", cost:"5000-20000€" },
+    { id:"F016", code:"P2458", title:"Régénération FAP - Durée excessive", type:"mecanique", component:"Filtre à particules (FAP)", brands:["ALL"], engines:["diesel"],
+      symptoms:["Ventilateur actif après arrêt","Odeur de brûlé","Consommation élevée"],
+      causes:["FAP partiellement colmaté","Injecteurs HS","Capteur température HS"],
+      consequences:["Risque incendie","Dommages FAP"],
+      diagnostics:["Test injecteurs","Vérification capteur température","Test régénération"],
+      repairs:["Remplacement FAP/injecteurs/capteur"],
+      tsb:["MAJ logiciel calculateur si régénérations excessives (C002)"],
+      severity:"critique", cost:"500-1500€" },
     { id:"F017", code:"P0087", title:"Pression de rampe carburant trop basse", type:"mecanique", component:"Pompe à injection", brands:["ALL"], engines:["diesel"],
       symptoms:["Perte puissance sévère","Mode dégradé","Calage","Démarrage impossible"],
       causes:["Pompe HP HS","Régulateur HS","Filtre colmaté","Fuite circuit","Injecteurs fuient"],
@@ -591,11 +650,25 @@ const AUTO_DATA = {
       diagnostics:["Mesure pression rampe","Test pompe HP","Test injecteurs"],
       repairs:["Remplacement pompe HP/régulateur/filtre"],
       severity:"critique", cost:"800-2500€" },
+    { id:"F018", code:"P0657", title:"Tension alimentation calculateur anormale", type:"electrique", component:"Faisceau électrique", brands:["ALL"], engines:["essence","diesel","hybride"],
+      symptoms:["Problèmes électroniques divers","Calculateurs réinitialisés","Perte mémoire"],
+      causes:["Faisceau endommagé","Masse défectueuse","Alternateur HS","Connecteurs oxydés"],
+      consequences:["Dommages calculateurs","Panne électronique complète"],
+      diagnostics:["Test tension alimentation","Vérification masses","Inspection faisceau"],
+      repairs:["Réparation faisceau/masses","Remplacement alternateur"],
+      severity:"important", cost:"200-1000€" },
+    { id:"F019", code:"P0500", title:"Capteur de vitesse véhicule défaillant", type:"electronique", component:"Capteur de régime", brands:["ALL"], engines:["essence","diesel"],
+      symptoms:["Compteur inopérant","Régulateur inopérant","ABS/ESP désactivés"],
+      causes:["Capteur HS","Faisceau endommagé","Connecteur oxydé"],
+      consequences:["Sécurité compromise","ABS/ESP inopérants"],
+      diagnostics:["Test capteur","Vérification faisceau"],
+      repairs:["Remplacement capteur","Réparation faisceau"],
+      severity:"important", cost:"100-400€" },
     { id:"F021", code:"TSB-DV5", title:"1.5 BlueHDi : courroie distribution 7mm → 8mm (modification constructeur)", type:"mecanique", component:"Courroie de distribution",
       brands:["Peugeot","Citroën","DS","Opel"], engines:["diesel"],
       engineRefs:["1.5 BlueHDi 100","1.5 BlueHDi 110","1.5 BlueHDi 130"],
       modelRefs:["208","2008","308","3008","5008","508","C3","C4","C5 Aircross","Berlingo","Corsa","Mokka","Grandland"],
-      symptoms:["Usure anormale courroie au contrôle","Effilochage","Particules dans carter","Voyant si capteur pression huile"],
+      symptoms:["Usure anormale courroie au contrôle","Effilochage","Particules dans carter","Voyant pression huile"],
       causes:["Courroie 7mm d'origine sous-dimensionnée","Dilution huile par régénérations FAP"],
       consequences:["Rupture courroie = casse moteur","Colmatage crépine pompe à huile"],
       diagnostics:["Contrôle visuel courroie (largeur/effilochage)","Historique régénérations","Contrôle dilution huile"],
@@ -634,7 +707,7 @@ const AUTO_DATA = {
       causes:["Tendeur chaîne fragile","Allongement chaîne"],
       consequences:["Rupture chaîne = casse moteur totale"],
       diagnostics:["Écoute bruit arrière moteur","Contrôle codes défauts position came"],
-      repairs:["Remplacement kit chaîne complet (main d'œuvre importante: moteur déposé ou accès par boîte)"],
+      repairs:["Remplacement kit chaîne complet (main d'œuvre importante)"],
       tsb:["Remplacement préventif recommandé dès 120-150 000 km"],
       severity:"critique", cost:"1500-3000€" },
     { id:"F025", code:"TSB-EA189", title:"VW 2.0 TDI EA189 : campagne NOx (mise à jour logiciel)", type:"electronique", component:"Vanne EGR",
@@ -694,6 +767,7 @@ const AUTO_DATA = {
       severity:"critique", cost:"200-2500€" }
   ],
 
+  // ===== CODES OBD-II =====
   obdCodes: {
     "P0001":"Régulateur volume carburant - circuit ouvert","P0010":"Position arbre à cames A - Banque 1",
     "P0011":"Arbre à cames A trop avancé","P0012":"Arbre à cames A trop retardé",
@@ -711,12 +785,14 @@ const AUTO_DATA = {
   }
 };
 
+// ===== FONCTIONS UTILITAIRES =====
 function getAllBrands(){ return Object.keys(AUTO_DATA.brands).sort(); }
 function getModelsByBrand(brand){ return (AUTO_DATA.brands[brand]||{}).models || []; }
 function getEnginesByModel(brand,model){ return ((AUTO_DATA.enginesByModel[brand]||{})[model]) || []; }
 function getComponentsByType(type){
-  if(!type) return [...AUTO_DATA.components.mecanique,...AUTO_DATA.components.electrique,...AUTO_DATA.components.electronique];
-  return AUTO_DATA.components[type]||[];
+  const C = AUTO_DATA.components || { mecanique:[], electrique:[], electronique:[] };
+  if(!type) return [...(C.mecanique||[]), ...(C.electrique||[]), ...(C.electronique||[])];
+  return C[type] || [];
 }
 function getCampaigns(brand,model,engineName){
   return AUTO_DATA.campaigns.filter(c=>{
