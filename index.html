@@ -12,7 +12,6 @@
     <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
-    <!-- Écran de connexion -->
     <div id="loginScreen" class="screen active">
         <div class="login-container">
             <div class="logo">🔧 AutoDiag Pro</div>
@@ -29,13 +28,10 @@
                 <button type="submit" class="btn btn-primary">Se connecter</button>
                 <p id="loginError" class="error"></p>
             </form>
-            <div class="status-indicator">
-                <span id="connectionStatus">● Hors ligne</span>
-            </div>
+            <div class="status-indicator"><span id="connectionStatus">● Hors ligne</span></div>
         </div>
     </div>
 
-    <!-- Écran principal -->
     <div id="mainScreen" class="screen">
         <header>
             <div class="header-content">
@@ -50,28 +46,27 @@
         </header>
 
         <main>
-            <!-- Section filtres -->
             <section class="filters-section">
                 <h2>🔍 Filtres de recherche</h2>
                 <div class="filters-grid">
                     <div class="form-group">
                         <label>Marque</label>
-                        <select id="filterBrand">
-                            <option value="">Toutes les marques</option>
-                        </select>
+                        <select id="filterBrand"><option value="">Toutes les marques</option></select>
                     </div>
                     <div class="form-group">
                         <label>Modèle</label>
-                        <select id="filterModel" disabled>
-                            <option value="">Tous les modèles</option>
-                        </select>
+                        <select id="filterModel" disabled><option value="">Tous les modèles</option></select>
                     </div>
                     <div class="form-group">
-                        <label>Motorisation</label>
+                        <label>Motorisation précise (puissance)</label>
+                        <select id="filterEngineSpec" disabled><option value="">Toutes motorisations</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label>Type motorisation</label>
                         <select id="filterEngine">
-                            <option value="">Toutes motorisations</option>
+                            <option value="">Tous types</option>
                             <option value="essence">Essence</option>
-                            <option value="flexfuel">FlexFuel (E85)</option>
+                            <option value="flexfuel">FlexFuel / GPL</option>
                             <option value="diesel">Diesel</option>
                             <option value="hybride">Hybride</option>
                             <option value="electrique">Électrique</option>
@@ -88,9 +83,7 @@
                     </div>
                     <div class="form-group">
                         <label>Composant</label>
-                        <select id="filterComponent">
-                            <option value="">Tous composants</option>
-                        </select>
+                        <select id="filterComponent"><option value="">Tous composants</option></select>
                     </div>
                     <div class="form-group">
                         <label>Code défaut OBD</label>
@@ -98,7 +91,7 @@
                     </div>
                     <div class="form-group">
                         <label>Recherche libre</label>
-                        <input type="text" id="filterSearch" placeholder="Symptôme, pièce...">
+                        <input type="text" id="filterSearch" placeholder="Symptôme, pièce, rappel...">
                     </div>
                     <div class="form-group filter-actions">
                         <button id="applyFilters" class="btn btn-primary">Appliquer</button>
@@ -107,18 +100,20 @@
                 </div>
             </section>
 
-            <!-- Section résultats -->
+            <section id="engineInfoSection" class="engine-info" style="display:none;">
+                <h2 id="engineInfoTitle"></h2>
+                <div id="engineInfoBody"></div>
+            </section>
+
             <section class="results-section">
                 <h2>📋 Résultats <span id="resultsCount" class="badge">0</span></h2>
+                <div id="campaignsList"></div>
                 <div id="resultsList" class="results-list"></div>
-                <div id="noResults" class="no-results" style="display:none;">
-                    Aucune panne ne correspond à vos critères.
-                </div>
+                <div id="noResults" class="no-results" style="display:none;">Aucune panne ne correspond à vos critères.</div>
             </section>
         </main>
     </div>
 
-    <!-- Modal détail panne -->
     <div id="faultModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -129,7 +124,6 @@
         </div>
     </div>
 
-    <!-- Modal admin -->
     <div id="adminModal" class="modal">
         <div class="modal-content modal-large">
             <div class="modal-header">
@@ -148,7 +142,6 @@
         </div>
     </div>
 
-    <!-- Modal partage -->
     <div id="shareModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -156,7 +149,7 @@
                 <button class="modal-close" id="shareClose">&times;</button>
             </div>
             <div class="modal-body">
-                <p>Générez un lien de partage ou un QR code pour distribuer l'application.</p>
+                <p>Générez un lien de partage ou exportez les données.</p>
                 <div class="share-options">
                     <button id="generateLink" class="btn btn-primary">Générer un lien</button>
                     <button id="downloadAPK" class="btn btn-secondary">Télécharger APK</button>
@@ -168,7 +161,7 @@
     </div>
 
     <footer>
-        <p>AutoDiag Pro v1.0 - Formation & Diagnostic Automobile</p>
+        <p>AutoDiag Pro v2.0 - Formation & Diagnostic Automobile</p>
         <p class="small">Compatible 4G / 5G / WiFi / Hors ligne</p>
     </footer>
 
