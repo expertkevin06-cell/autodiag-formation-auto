@@ -1,310 +1,78 @@
 /**
- * Gestion de la base de données locale IndexedDB
- * Fonctionne hors ligne avec sauvegarde automatique
+ * db v4 : resynchronise automatiquement les pannes (DATA_VERSION)
  */
+const DB_NAME='AutoDiagProDB';
+const DB_VERSION=1;
+const DB_CONFIG={ stores:{ users:{keyPath:'username'}, faults:{keyPath:'id'}, accessRequests:{keyPath:'id'}, settings:{keyPath:'key'}, backups:{keyPath:'id'} } };
 
-const DB_NAME = 'AutoDiagProDB';
-const DB_VERSION = 1;
-
-const DB_CONFIG = {
-  stores: {
-    users: { keyPath: 'username' },
-    faults: { keyPath: 'id' },
-    accessRequests: { keyPath: 'id' },
-    settings: { keyPath: 'key' },
-    backups: { keyPath: 'id' }
-  }
-};
-
-class Database {
-  constructor() {
-    this.db = null;
-  }
-
-  async init() {
-    return new Promise((resolve, reject) => {
-      if (this.db) {
-        resolve(this.db);
-        return;
-      }
-
-      const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-      request.onerror = () => {
-        console.error('[DB] Erreur d\'ouverture:', request.error);
-        reject(request.error);
-      };
-
-      request.onsuccess = () => {
-        this.db = request.result;
-        console.log('[DB] Base de données ouverte');
-        resolve(this.db);
-      };
-
-      request.onupgradeneeded = (event) => {
-        const db = event.target.result;
-
-        Object.entries(DB_CONFIG.stores).forEach(([name, config]) => {
-          if (!db.objectStoreNames.contains(name)) {
-            const store = db.createObjectStore(name, {
-              keyPath: config.keyPath,
-              autoIncrement: config.autoIncrement || false
-            });
-            
-            if (config.indexes) {
-              config.indexes.forEach(index => {
-                store.createIndex(index.name, index.keyPath, { unique: index.unique || false });
-              });
-            }
-          }
+class Database{
+  constructor(){ this.db=null; }
+  async init(){
+    return new Promise((resolve,reject)=>{
+      if(this.db){ resolve(this.db); return; }
+      const request=indexedDB.open(DB_NAME,DB_VERSION);
+      request.onerror=()=>reject(request.error);
+      request.onsuccess=()=>{ this.db=request.result; resolve(this.db); };
+      request.onupgradeneeded=(e)=>{
+        const db=e.target.result;
+        Object.entries(DB_CONFIG.stores).forEach(([name,config])=>{
+          if(!db.objectStoreNames.contains(name)) db.createObjectStore(name,{keyPath:config.keyPath,autoIncrement:config.autoIncrement||false});
         });
-
-        console.log('[DB] Structure de la base créée/mise à jour');
       };
     });
   }
-
-  async add(storeName, data) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.add(data);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async put(storeName, data) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.put(data);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async get(storeName, key) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.get(key);
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async getAll(storeName) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.getAll();
-      request.onsuccess = () => resolve(request.result || []);
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async delete(storeName, key) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.delete(key);
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async clear(storeName) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readwrite');
-      const store = transaction.objectStore(storeName);
-      const request = store.clear();
-      request.onsuccess = () => resolve();
-      request.onerror = () => reject(request.error);
-    });
-  }
-
-  async count(storeName) {
-    await this.init();
-    return new Promise((resolve, reject) => {
-      const transaction = this.db.transaction([storeName], 'readonly');
-      const store = transaction.objectStore(storeName);
-      const request = store.count();
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => reject(request.error);
-    });
-  }
+  async add(s,d){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readwrite'); const r=t.objectStore(s).add(d); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async put(s,d){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readwrite'); const r=t.objectStore(s).put(d); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async get(s,k){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readonly'); const r=t.objectStore(s).get(k); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+  async getAll(s){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readonly'); const r=t.objectStore(s).getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error); }); }
+  async delete(s,k){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readwrite'); const r=t.objectStore(s).delete(k); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); }); }
+  async clear(s){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readwrite'); const r=t.objectStore(s).clear(); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error); }); }
+  async count(s){ await this.init(); return new Promise((res,rej)=>{ const t=this.db.transaction([s],'readonly'); const r=t.objectStore(s).count(); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
 }
+const db=new Database();
 
-const db = new Database();
+const DBUtils={
+  async createUser(u,p,role='user'){ const hp=await this.hashPassword(p); return db.add('users',{username:u,password:hp,role,status:'pending',createdAt:Date.now(),lastLogin:null}); },
+  async getUser(u){ return db.get('users',u); },
+  async updateUser(u,up){ const user=await this.getUser(u); if(!user) throw new Error('Utilisateur non trouvé'); return db.put('users',{...user,...up}); },
+  async getAllUsers(){ return db.getAll('users'); },
+  async deleteUser(u){ return db.delete('users',u); },
+  async verifyPassword(u,p){ const user=await this.getUser(u); if(!user) return false; return user.password===await this.hashPassword(p); },
+  async hashPassword(p){ const data=new TextEncoder().encode(p+'AutoDiagPro_Salt_2026'); const buf=await crypto.subtle.digest('SHA-256',data); return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join(''); },
+  async createAccessRequest(d){ return db.add('accessRequests',{id:'req_'+Date.now(),...d,status:'pending',createdAt:Date.now()}); },
+  async getAllAccessRequests(){ return db.getAll('accessRequests'); },
+  async updateAccessRequest(id,up){ const r=await db.get('accessRequests',id); if(!r) throw new Error('Demande non trouvée'); return db.put('accessRequests',{...r,...up}); },
+  async setSetting(k,v){ return db.put('settings',{key:k,value:v,updatedAt:Date.now()}); },
+  async getSetting(k){ const s=await db.get('settings',k); return s?s.value:null; },
+  async createBackup(d){ return db.add('backups',{id:'backup_'+Date.now(),data:d,createdAt:Date.now()}); },
+  async getAllBackups(){ return db.getAll('backups'); },
+  async exportAll(){ return { users:await db.getAll('users'), accessRequests:await db.getAll('accessRequests'), settings:await db.getAll('settings'), exportedAt:Date.now(), version:DB_VERSION }; },
+  async importAll(d){ if(!d||!d.users) throw new Error('Format invalide'); for(const u of d.users) await db.put('users',u); if(d.accessRequests) for(const r of d.accessRequests) await db.put('accessRequests',r); if(d.settings) for(const s of d.settings) await db.put('settings',s); return true; },
 
-const DBUtils = {
-  async createUser(username, password, role = 'user') {
-    const hashedPassword = await this.hashPassword(password);
-    const user = {
-      username,
-      password: hashedPassword,
-      role,
-      status: 'pending',
-      createdAt: Date.now(),
-      lastLogin: null
-    };
-    return db.add('users', user);
-  },
-
-  async getUser(username) {
-    return db.get('users', username);
-  },
-
-  async updateUser(username, updates) {
-    const user = await this.getUser(username);
-    if (!user) throw new Error('Utilisateur non trouvé');
-    const updatedUser = { ...user, ...updates };
-    return db.put('users', updatedUser);
-  },
-
-  async getAllUsers() {
-    return db.getAll('users');
-  },
-
-  async deleteUser(username) {
-    return db.delete('users', username);
-  },
-
-  async verifyPassword(username, password) {
-    const user = await this.getUser(username);
-    if (!user) return false;
-    const hashedPassword = await this.hashPassword(password);
-    return user.password === hashedPassword;
-  },
-
-  async hashPassword(password) {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + 'AutoDiagPro_Salt_2026');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  },
-
-  async createAccessRequest(data) {
-    const request = {
-      id: 'req_' + Date.now(),
-      ...data,
-      status: 'pending',
-      createdAt: Date.now()
-    };
-    return db.add('accessRequests', request);
-  },
-
-  async getAllAccessRequests() {
-    return db.getAll('accessRequests');
-  },
-
-  async updateAccessRequest(id, updates) {
-    const request = await db.get('accessRequests', id);
-    if (!request) throw new Error('Demande non trouvée');
-    const updatedRequest = { ...request, ...updates };
-    return db.put('accessRequests', updatedRequest);
-  },
-
-  async deleteAccessRequest(id) {
-    return db.delete('accessRequests', id);
-  },
-
-  async setSetting(key, value) {
-    return db.put('settings', { key, value, updatedAt: Date.now() });
-  },
-
-  async getSetting(key) {
-    const setting = await db.get('settings', key);
-    return setting ? setting.value : null;
-  },
-
-  async createBackup(data) {
-    const backup = {
-      id: 'backup_' + Date.now(),
-      data,
-      createdAt: Date.now()
-    };
-    return db.add('backups', backup);
-  },
-
-  async getAllBackups() {
-    return db.getAll('backups');
-  },
-
-  async deleteBackup(id) {
-    return db.delete('backups', id);
-  },
-
-  async exportAll() {
-    const data = {
-      users: await db.getAll('users'),
-      accessRequests: await db.getAll('accessRequests'),
-      settings: await db.getAll('settings'),
-      exportedAt: Date.now(),
-      version: DB_VERSION
-    };
-    return data;
-  },
-
-  async importAll(data) {
-    if (!data || !data.users) {
-      throw new Error('Format de données invalide');
+  async initializeDefaults(){
+    // Admin par défaut
+    const adminExists=await this.getUser('admin');
+    if(!adminExists){
+      await this.createUser('admin','Kevin83600','admin');
+      await this.updateUser('admin',{status:'approved'});
     }
-
-    for (const user of data.users) {
-      await db.put('users', user);
+    // 🔁 Resynchronisation des pannes selon DATA_VERSION
+    const target=window.DATA_VERSION||1;
+    const stored=await this.getSetting('dataVersion');
+    if(stored!==target){
+      await db.clear('faults');
+      for(const f of AUTO_DATA.faults) await db.put('faults',f);
+      await this.setSetting('dataVersion',target);
+      console.log('[DB] Pannes resynchronisées v'+target+':',AUTO_DATA.faults.length);
+    } else if((await db.count('faults'))===0){
+      for(const f of AUTO_DATA.faults) await db.put('faults',f);
     }
-
-    if (data.accessRequests) {
-      for (const request of data.accessRequests) {
-        await db.put('accessRequests', request);
-      }
-    }
-
-    if (data.settings) {
-      for (const setting of data.settings) {
-        await db.put('settings', setting);
-      }
-    }
-
-    return true;
-  },
-
-  // 🔐 INITIALISATION AVEC MOT DE PASSE ADMIN : Kevin83600
-  async initializeDefaults() {
-    const adminExists = await this.getUser('admin');
-    if (!adminExists) {
-      await this.createUser('admin', 'Kevin83600', 'admin');
-      await this.updateUser('admin', { status: 'approved' });
-      console.log('[DB] Administrateur par défaut créé (admin/Kevin83600)');
-    }
-
-    const faultsCount = await db.count('faults');
-    if (faultsCount === 0) {
-      for (const fault of AUTO_DATA.faults) {
-        await db.add('faults', fault);
-      }
-      console.log('[DB] Pannes par défaut importées:', AUTO_DATA.faults.length);
-    }
-
-    const theme = await this.getSetting('theme');
-    if (!theme) {
-      await this.setSetting('theme', 'light');
-      await this.setSetting('language', 'fr');
-      await this.setSetting('autoBackup', true);
+    // Paramètres
+    if(!(await this.getSetting('theme'))){
+      await this.setSetting('theme','light');
+      await this.setSetting('language','fr');
+      await this.setSetting('autoBackup',true);
     }
   }
 };
-
-if (typeof window !== 'undefined') {
-  window.db = db;
-  window.DBUtils = DBUtils;
-}
+if (typeof window !== 'undefined'){ window.db=db; window.DBUtils=DBUtils; }
