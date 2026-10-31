@@ -1,324 +1,160 @@
-/**
- * Gestion du mode administrateur
- */
-
 class AdminManager {
-  constructor() {
-    this.currentUser = null;
-    this.attachEventListeners();
+  constructor(){ this.currentUser=null; this.attachEventListeners(); }
+
+  attachEventListeners(){
+    const adminBtn=document.getElementById('adminBtn');
+    if(adminBtn) adminBtn.addEventListener('click', ()=>this.showAdminModal());
+    const adminClose=document.getElementById('adminClose');
+    if(adminClose) adminClose.addEventListener('click', ()=>document.getElementById('adminModal').classList.remove('active'));
+    const shareClose=document.getElementById('shareClose');
+    if(shareClose) shareClose.addEventListener('click', ()=>document.getElementById('shareModal').classList.remove('active'));
+    document.addEventListener('click', e=>{ if(e.target.classList.contains('tab-btn')) this.switchTab(e.target.dataset.tab); });
+    const gl=document.getElementById('generateLink'); if(gl) gl.addEventListener('click', ()=>this.copyShareLink());
+    const da=document.getElementById('downloadAPK'); if(da) da.addEventListener('click', ()=>this.showAPKInstructions());
+    const ed=document.getElementById('exportData'); if(ed) ed.addEventListener('click', ()=>window.backupManager.exportData());
+    const ub=document.getElementById('updateBtn'); if(ub) ub.addEventListener('click', ()=>window.updateManager.refresh(true));
   }
 
-  attachEventListeners() {
-    const adminBtn = document.getElementById('adminBtn');
-    const adminClose = document.getElementById('adminClose');
-    const shareClose = document.getElementById('shareClose');
-
-    if (adminBtn) {
-      adminBtn.addEventListener('click', () => this.showAdminModal());
-    }
-
-    if (adminClose) {
-      adminClose.addEventListener('click', () => {
-        document.getElementById('adminModal').classList.remove('active');
-      });
-    }
-
-    if (shareClose) {
-      shareClose.addEventListener('click', () => {
-        document.getElementById('shareModal').classList.remove('active');
-      });
-    }
-
-    document.addEventListener('click', (e) => {
-      if (e.target.classList.contains('tab-btn')) {
-        const tab = e.target.dataset.tab;
-        this.switchTab(tab);
-      }
-    });
-
-    const generateLinkBtn = document.getElementById('generateLink');
-    const downloadAPKBtn = document.getElementById('downloadAPK');
-    const exportDataBtn = document.getElementById('exportData');
-
-    if (generateLinkBtn) {
-      generateLinkBtn.addEventListener('click', () => this.generateShareLink());
-    }
-
-    if (downloadAPKBtn) {
-      downloadAPKBtn.addEventListener('click', () => this.showAPKInstructions());
-    }
-
-    if (exportDataBtn) {
-      exportDataBtn.addEventListener('click', () => window.backupManager.exportData());
-    }
-  }
-
-  setCurrentUser(user) {
-    this.currentUser = user;
-    const adminBtn = document.getElementById('adminBtn');
-    const userDisplay = document.getElementById('userDisplay');
-    
-    if (user) {
-      if (userDisplay) userDisplay.textContent = `👤 ${user.username}`;
-      if (adminBtn) adminBtn.style.display = user.role === 'admin' ? 'inline-block' : 'none';
+  setCurrentUser(user){
+    this.currentUser=user;
+    const adminBtn=document.getElementById('adminBtn');
+    const updateBtn=document.getElementById('updateBtn');
+    const userDisplay=document.getElementById('userDisplay');
+    if(user){
+      if(userDisplay) userDisplay.textContent='👤 '+user.username;
+      const isAdmin=user.role==='admin';
+      if(adminBtn) adminBtn.style.display=isAdmin?'inline-block':'none';
+      if(updateBtn) updateBtn.style.display=isAdmin?'inline-block':'none';
+      if(isAdmin) this.refreshBadge();
     } else {
-      if (userDisplay) userDisplay.textContent = '';
-      if (adminBtn) adminBtn.style.display = 'none';
+      if(userDisplay) userDisplay.textContent='';
+      if(adminBtn) adminBtn.style.display='none';
+      if(updateBtn) updateBtn.style.display='none';
+      const b=document.getElementById('adminBadge'); if(b) b.style.display='none';
     }
   }
 
-  async showAdminModal() {
-    if (!this.currentUser || this.currentUser.role !== 'admin') {
-      alert('Accès réservé aux administrateurs');
-      return;
-    }
-
-    const modal = document.getElementById('adminModal');
-    modal.classList.add('active');
-    this.switchTab('users');
+  async refreshBadge(){
+    const n=await DBUtils.pendingCount();
+    const b=document.getElementById('adminBadge');
+    if(!b) return;
+    b.textContent=n; b.style.display=n>0?'inline-block':'none';
   }
 
-  async switchTab(tab) {
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.tab === tab);
-    });
-
-    const content = document.getElementById('adminContent');
-    
-    switch (tab) {
-      case 'users': await this.renderUsersTab(content); break;
-      case 'pending': await this.renderPendingTab(content); break;
-      case 'data': await this.renderDataTab(content); break;
-      case 'share': await this.renderShareTab(content); break;
-    }
+  async showAdminModal(){
+    if(!this.currentUser||this.currentUser.role!=='admin'){ alert('Accès réservé aux administrateurs'); return; }
+    document.getElementById('adminModal').classList.add('active');
+    this.switchTab('pending');
   }
 
-  async renderUsersTab(container) {
-    const users = await DBUtils.getAllUsers();
-    
-    container.innerHTML = `
-      <h3>👥 Utilisateurs enregistrés (${users.length})</h3>
-      <div class="user-list">
-        ${users.map(user => `
-          <div class="user-item">
-            <div class="user-info">
-              <strong>${user.username}</strong>
-              <small>
-                Rôle: ${user.role} | 
-                Statut: <span class="status-badge ${user.status}">${this.getStatusLabel(user.status)}</span> |
-                Créé le: ${new Date(user.createdAt).toLocaleDateString('fr-FR')}
-                ${user.lastLogin ? ` | Dernière connexion: ${new Date(user.lastLogin).toLocaleDateString('fr-FR')}` : ''}
-              </small>
-            </div>
-            <div class="user-actions">
-              ${user.username !== 'admin' ? `
-                ${user.status !== 'approved' ? `<button class="btn btn-success" onclick="window.adminManager.approveUser('${user.username}')">✓ Approuver</button>` : ''}
-                ${user.status !== 'revoked' ? `<button class="btn btn-danger" onclick="window.adminManager.revokeUser('${user.username}')">✗ Révoquer</button>` : ''}
-                <button class="btn btn-secondary" onclick="window.adminManager.deleteUser('${user.username}')">🗑️</button>
-              ` : '<span style="color: var(--text-light); font-size: 0.75rem;">Admin principal</span>'}
-            </div>
+  async switchTab(tab){
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+    const c=document.getElementById('adminContent');
+    if(tab==='pending') await this.renderPendingTab(c);
+    if(tab==='users') await this.renderUsersTab(c);
+    if(tab==='data') await this.renderDataTab(c);
+    if(tab==='perso') await this.renderPersoTab(c);
+    if(tab==='share') await this.renderShareTab(c);
+  }
+
+  async renderPendingTab(c){
+    const reqs=(await DBUtils.getAllAccessRequests()).filter(r=>r.status==='pending');
+    c.innerHTML=`<h3>📨 Demandes d'accès en attente (${reqs.length})</h3>
+      ${reqs.length===0?'<p style="color:var(--text-light)">Aucune demande en attente</p>':''}
+      <div class="user-list">${reqs.map(r=>`
+        <div class="user-item">
+          <div class="user-info"><strong>${r.firstName} (${r.username})</strong>
+            <small>${r.email?('📧 '+r.email+' | '):''}${r.message?('💬 '+r.message+' | '):''}🕐 ${new Date(r.createdAt).toLocaleDateString('fr-FR')}</small></div>
+          <div class="user-actions">
+            <button class="btn btn-success" onclick="window.adminManager.approveRequest('${r.id}')">✓ Autoriser</button>
+            <button class="btn btn-danger" onclick="window.adminManager.rejectRequest('${r.id}')">✗ Refuser</button>
           </div>
-        `).join('')}
-      </div>
-    `;
+        </div>`).join('')}</div>`;
   }
 
-  async renderPendingTab(container) {
-    const requests = await DBUtils.getAllAccessRequests();
-    const pendingRequests = requests.filter(r => r.status === 'pending');
-    
-    container.innerHTML = `
-      <h3>⏳ Demandes en attente (${pendingRequests.length})</h3>
-      ${pendingRequests.length === 0 ? '<p style="color: var(--text-light);">Aucune demande en attente</p>' : ''}
-      <div class="user-list">
-        ${pendingRequests.map(request => `
-          <div class="user-item">
-            <div class="user-info">
-              <strong>${request.username}</strong>
-              <small>
-                Email: ${request.email || 'N/A'} |
-                Message: ${request.message || 'Aucun'} |
-                Demandé le: ${new Date(request.createdAt).toLocaleDateString('fr-FR')}
-              </small>
-            </div>
-            <div class="user-actions">
-              <button class="btn btn-success" onclick="window.adminManager.approveRequest('${request.id}')">✓ Accepter</button>
-              <button class="btn btn-danger" onclick="window.adminManager.rejectRequest('${request.id}')">✗ Refuser</button>
-            </div>
-          </div>
-        `).join('')}
-      </div>
-    `;
+  async renderUsersTab(c){
+    const users=await DBUtils.getAllUsers();
+    c.innerHTML=`<h3>👥 Utilisateurs (${users.length})</h3><div class="user-list">${users.map(u=>`
+      <div class="user-item">
+        <div class="user-info"><strong>${u.username}</strong>
+          <small>Rôle: ${u.role} | Statut: <span class="status-badge ${u.status}">${{pending:'En attente',approved:'Autorisé',revoked:'Révoqué'}[u.status]||u.status}</span>${u.lastLogin?(' | Dernière connexion: '+new Date(u.lastLogin).toLocaleDateString('fr-FR')):''}</small></div>
+        <div class="user-actions">
+          ${u.username!=='admin'?`
+            ${u.status!=='approved'?`<button class="btn btn-success" onclick="window.adminManager.approveUser('${u.username}')">✓ Autoriser</button>`:''}
+            ${u.status!=='revoked'?`<button class="btn btn-danger" onclick="window.adminManager.revokeUser('${u.username}')">✗ Révoquer</button>`:''}
+            <button class="btn btn-secondary" onclick="window.adminManager.deleteUser('${u.username}')">🗑️</button>`
+          :'<span style="color:var(--text-light);font-size:.75rem">Admin principal</span>'}
+        </div>
+      </div>`).join('')}</div>`;
   }
 
-  async renderDataTab(container) {
-    const faultsCount = await db.count('faults');
-    const backups = await DBUtils.getAllBackups();
-    
-    container.innerHTML = `
-      <h3>📊 Gestion des données</h3>
-      <div style="margin-bottom: 1rem;">
-        <p><strong>Pannes enregistrées:</strong> ${faultsCount}</p>
-        <p><strong>Sauvegardes disponibles:</strong> ${backups.length}</p>
-      </div>
-      
-      <h4>Importer des pannes</h4>
-      <input type="file" id="importFaultsFile" accept=".json" style="margin-bottom: 1rem;">
-      <button class="btn btn-primary" onclick="window.adminManager.importFaultsFile()" style="margin-bottom: 1rem;">Importer les pannes</button>
-      
+  async renderDataTab(c){
+    const faults=await db.count('faults');
+    const last=await window.updateManager.lastUpdateLabel();
+    c.innerHTML=`<h3>📊 Données & mises à jour</h3>
+      <p><strong>Pannes en base :</strong> ${faults} | <strong>Campagnes :</strong> ${AUTO_DATA.campaigns.length}</p>
+      <p><strong>Dernière mise à jour :</strong> ${last} <em>(auto tous les 30 jours)</em></p>
+      <button class="btn btn-primary" onclick="window.updateManager.refresh(true)" style="margin:.5rem 0">🔄 Mise à jour manuelle maintenant</button>
+      <h4>Importer des pannes (JSON)</h4>
+      <input type="file" id="importFaultsFile" accept=".json">
+      <button class="btn btn-secondary" onclick="window.adminManager.importFaultsFile()">Importer</button>
       <h4>Exporter les pannes</h4>
-      <button class="btn btn-secondary" onclick="window.backupManager.exportFaults()" style="margin-bottom: 1rem;">Exporter les pannes</button>
-      
-      <h4>Sauvegarde complète</h4>
-      <button class="btn btn-primary" onclick="window.backupManager.exportData()" style="margin-bottom: 1rem;">Créer une sauvegarde</button>
-      
-      <h4>Restaurer une sauvegarde</h4>
-      <input type="file" id="importBackupFile" accept=".json">
-      <button class="btn btn-secondary" onclick="window.adminManager.importBackupFile()">Restaurer</button>
-    `;
+      <button class="btn btn-secondary" onclick="window.backupManager.exportFaults()">Exporter</button>`;
   }
 
-  async renderShareTab(container) {
-    const shareLink = window.backupManager.generateShareLink();
-    
-    container.innerHTML = `
-      <h3>📤 Partager l'application</h3>
-      <p>Partagez ce lien pour permettre à d'autres utilisateurs d'accéder à l'application :</p>
-      <div class="share-result">
-        <code>${shareLink}</code>
-      </div>
-      <button class="btn btn-secondary" onclick="window.adminManager.copyShareLink()" style="margin-top: 1rem;">📋 Copier le lien</button>
-      
-      <h4 style="margin-top: 2rem;">📱 Convertir en APK</h4>
-      <p>Pour créer un APK Android :</p>
-      <ol style="margin: 1rem 0; padding-left: 1.5rem;">
-        <li>Hébergez ce projet sur un serveur HTTPS (GitHub Pages, Netlify, etc.)</li>
-        <li>Allez sur <a href="https://www.pwabuilder.com" target="_blank">pwabuilder.com</a></li>
-        <li>Entrez l'URL de votre site hébergé</li>
-        <li>Cliquez sur "Package for stores" → "Android"</li>
-        <li>Téléchargez le fichier APK généré</li>
-      </ol>
-      
-      <h4 style="margin-top: 2rem;">🔗 Hébergement gratuit recommandé</h4>
-      <ul style="margin: 1rem 0; padding-left: 1.5rem;">
-        <li><strong>GitHub Pages:</strong> Gratuit, HTTPS automatique</li>
-        <li><strong>Netlify:</strong> Gratuit, HTTPS automatique</li>
-        <li><strong>Vercel:</strong> Gratuit, HTTPS automatique</li>
-        <li><strong>Cloudflare Pages:</strong> Gratuit, HTTPS automatique</li>
-      </ul>
-    `;
+  async renderPersoTab(c){
+    c.innerHTML=`<h3>🖼️ Fond d'écran (admin)</h3>
+      <p>Photo appliquée à tous les écrans et <strong>diffusée aux tiers</strong> via Export/Import de sauvegarde.</p>
+      <input type="file" id="wallpaperFile" accept="image/*">
+      <button class="btn btn-primary" onclick="window.adminManager.setWallpaperFromFile()" style="margin:.5rem">Appliquer le fond</button>
+      <button class="btn btn-danger" onclick="window.adminManager.removeWallpaper()">Retirer</button>`;
   }
 
-  getStatusLabel(status) {
-    const labels = { 'pending': 'En attente', 'approved': 'Approuvé', 'revoked': 'Révoqué' };
-    return labels[status] || status;
+  async renderShareTab(c){
+    const link=window.backupManager.generateShareLink();
+    c.innerHTML=`<h3>📤 Partager</h3><div class="share-result"><code>${link}</code></div>
+      <button class="btn btn-secondary" onclick="window.adminManager.copyShareLink()" style="margin-top:.75rem">📋 Copier</button>
+      <h4>📱 APK</h4><ol style="padding-left:1.25rem"><li>Hébergé sur GitHub Pages (HTTPS)</li><li>pwabuilder.com → URL → Package for stores → Android</li><li>Installer l'APK</li></ol>`;
   }
 
-  async approveUser(username) {
-    if (!confirm(`Approuver l'utilisateur ${username} ?`)) return;
-    try {
-      await DBUtils.updateUser(username, { status: 'approved' });
-      window.backupManager.showNotification('Utilisateur approuvé', 'success');
-      this.switchTab('users');
-    } catch (error) {
-      window.backupManager.showNotification('Erreur: ' + error.message, 'error');
-    }
+  getStatusLabel(s){ return {pending:'En attente',approved:'Autorisé',revoked:'Révoqué'}[s]||s; }
+
+  async approveUser(u){ if(!confirm('Autoriser '+u+' ?'))return; await DBUtils.updateUser(u,{status:'approved'}); backupManager.showNotification('✅ '+u+' autorisé','success'); this.switchTab('users'); }
+  async revokeUser(u){ if(!confirm('Révoquer '+u+' ?'))return; await DBUtils.updateUser(u,{status:'revoked'}); backupManager.showNotification('🚫 '+u+' révoqué','success'); this.switchTab('users'); }
+  async deleteUser(u){ if(!confirm('Supprimer '+u+' ?'))return; await DBUtils.deleteUser(u); backupManager.showNotification('🗑️ '+u+' supprimé','success'); this.switchTab('users'); }
+
+  async approveRequest(id){
+    const r=await db.get('accessRequests',id); if(!r) return;
+    try{ await db.put('users',{ username:r.username, password:r.passwordHash, role:'user', status:'approved', firstName:r.firstName, createdAt:Date.now(), lastLogin:null }); }catch(e){ await DBUtils.updateUser(r.username,{status:'approved'}); }
+    await DBUtils.updateAccessRequest(id,{status:'approved'});
+    backupManager.showNotification('✅ '+r.firstName+' ('+r.username+') autorisé','success');
+    this.refreshBadge(); this.switchTab('pending');
+  }
+  async rejectRequest(id){
+    const r=await db.get('accessRequests',id); if(!r) return;
+    await DBUtils.updateAccessRequest(id,{status:'rejected'});
+    backupManager.showNotification('❌ Demande de '+r.firstName+' refusée','success');
+    this.refreshBadge(); this.switchTab('pending');
   }
 
-  async revokeUser(username) {
-    if (!confirm(`Révoquer l'accès de ${username} ?`)) return;
-    try {
-      await DBUtils.updateUser(username, { status: 'revoked' });
-      window.backupManager.showNotification('Utilisateur révoqué', 'success');
-      this.switchTab('users');
-    } catch (error) {
-      window.backupManager.showNotification('Erreur: ' + error.message, 'error');
-    }
+  async setWallpaperFromFile(){
+    const f=document.getElementById('wallpaperFile');
+    if(!f||!f.files[0]){ backupManager.showNotification('Choisissez une image','error'); return; }
+    const reader=new FileReader();
+    reader.onload=async()=>{ await DBUtils.setWallpaper(reader.result); window.applyWallpaper(); backupManager.showNotification('🖼️ Fond d\'écran appliqué','success'); };
+    reader.readAsDataURL(f.files[0]);
   }
+  async removeWallpaper(){ await DBUtils.setWallpaper(null); window.applyWallpaper(); backupManager.showNotification('Fond retiré','success'); }
 
-  async deleteUser(username) {
-    if (!confirm(`Supprimer définitivement l'utilisateur ${username} ?`)) return;
-    try {
-      await DBUtils.deleteUser(username);
-      window.backupManager.showNotification('Utilisateur supprimé', 'success');
-      this.switchTab('users');
-    } catch (error) {
-      window.backupManager.showNotification('Erreur: ' + error.message, 'error');
-    }
+  async importFaultsFile(){
+    const f=document.getElementById('importFaultsFile');
+    if(!f||!f.files[0]) return;
+    await window.backupManager.importFaults(f.files[0]);
   }
-
-  async approveRequest(requestId) {
-    try {
-      const request = await db.get('accessRequests', requestId);
-      if (!request) throw new Error('Demande non trouvée');
-      await DBUtils.createUser(request.username, request.password || 'temp123', 'user');
-      await DBUtils.updateUser(request.username, { status: 'approved' });
-      await DBUtils.updateAccessRequest(requestId, { status: 'approved' });
-      window.backupManager.showNotification('Demande approuvée, utilisateur créé', 'success');
-      this.switchTab('pending');
-    } catch (error) {
-      window.backupManager.showNotification('Erreur: ' + error.message, 'error');
-    }
+  copyShareLink(){
+    const l=window.backupManager.generateShareLink();
+    navigator.clipboard.writeText(l).then(()=>backupManager.showNotification('Lien copié','success'));
   }
-
-  async rejectRequest(requestId) {
-    if (!confirm('Refuser cette demande ?')) return;
-    try {
-      await DBUtils.updateAccessRequest(requestId, { status: 'rejected' });
-      window.backupManager.showNotification('Demande refusée', 'success');
-      this.switchTab('pending');
-    } catch (error) {
-      window.backupManager.showNotification('Erreur: ' + error.message, 'error');
-    }
-  }
-
-  async importFaultsFile() {
-    const fileInput = document.getElementById('importFaultsFile');
-    if (!fileInput || !fileInput.files[0]) {
-      window.backupManager.showNotification('Veuillez sélectionner un fichier', 'error');
-      return;
-    }
-    await window.backupManager.importFaults(fileInput.files[0]);
-  }
-
-  async importBackupFile() {
-    const fileInput = document.getElementById('importBackupFile');
-    if (!fileInput || !fileInput.files[0]) {
-      window.backupManager.showNotification('Veuillez sélectionner un fichier', 'error');
-      return;
-    }
-    await window.backupManager.importData(fileInput.files[0]);
-  }
-
-  copyShareLink() {
-    const shareLink = window.backupManager.generateShareLink();
-    navigator.clipboard.writeText(shareLink).then(() => {
-      window.backupManager.showNotification('Lien copié dans le presse-papiers', 'success');
-    }).catch(() => {
-      window.backupManager.showNotification('Impossible de copier le lien', 'error');
-    });
-  }
-
-  showAPKInstructions() {
-    alert(
-      '📱 Comment créer un APK Android :\n\n' +
-      '1. Hébergez ce projet sur GitHub Pages, Netlify ou Vercel (gratuit, HTTPS requis)\n\n' +
-      '2. Allez sur https://www.pwabuilder.com\n\n' +
-      '3. Entrez l\'URL de votre site hébergé\n\n' +
-      '4. Cliquez sur "Package for stores" puis "Android"\n\n' +
-      '5. Téléchargez le fichier APK généré\n\n' +
-      '6. Installez-le sur votre appareil Android'
-    );
-  }
-
-  generateShareLink() {
-    const shareLink = window.backupManager.generateShareLink();
-    navigator.clipboard.writeText(shareLink).then(() => {
-      window.backupManager.showNotification('Lien copié dans le presse-papiers', 'success');
-    });
-  }
+  showAPKInstructions(){ alert('1. Hébergez sur GitHub Pages\n2. pwabuilder.com → URL\n3. Package for stores → Android\n4. Installez l\'APK'); }
 }
-
-if (typeof window !== 'undefined') {
-  window.AdminManager = AdminManager;
-}
+if (typeof window !== 'undefined') window.AdminManager = AdminManager;
