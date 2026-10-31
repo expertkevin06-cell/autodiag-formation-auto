@@ -5,3 +5,9 @@
   "campaigns": [],
   "models": []
 }
+{
+  "version": 2,
+  "faults": [ { "id":"F200", "code":"P0ABC", "title":"Nouvelle panne...", "type":"electronique", "component":"Calculateurs (ECU)", "brands":["ALL"], "engines":["electrique"], "symptoms":["..."], "causes":["..."], "consequences":["..."], "diagnostics":["..."], "repairs":["..."], "severity":"important", "cost":"0-500€" } ],
+  "campaigns": [ { "id":"C021", "brands":["Renault"], "models":["R5"], "engines":["E-Tech"], "years":"2024-2026", "title":"MAJ BMS", "action":"MAJ concession", "severity":"modéré" } ],
+  "models": [ { "brand":"Renault", "country":"FR", "model":"Twingo E-Tech", "engines":[ { "name":"E-Tech 82", "type":"electrique", "ch":82, "kw":60, "code":"27.5 kWh", "years":"2026+", "issues":[], "recalls":[] } ] } ]
+}
