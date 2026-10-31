@@ -1,224 +1,130 @@
-/**
- * Application principale AutoDiag Pro
- */
-
 class AutoDiagApp {
-  constructor() {
-    this.filterManager = null;
-    this.backupManager = null;
-    this.adminManager = null;
-    this.currentUser = null;
-  }
+  constructor(){ this.filterManager=null; this.backupManager=null; this.adminManager=null; this.currentUser=null; }
 
-  async init() {
-    console.log('[App] Initialisation de AutoDiag Pro...');
-
-    try {
+  async init(){
+    try{
       await db.init();
       await DBUtils.initializeDefaults();
-
       await this.registerServiceWorker();
 
-      this.filterManager = new FilterManager();
-      this.backupManager = new BackupManager();
-      this.adminManager = new AdminManager();
-
-      window.filterManager = this.filterManager;
-      window.backupManager = this.backupManager;
-      window.adminManager = this.adminManager;
+      this.filterManager=new FilterManager();
+      this.backupManager=new BackupManager();
+      this.adminManager=new AdminManager();
+      window.updateManager=new UpdateManager();
+      window.filterManager=this.filterManager; window.backupManager=this.backupManager; window.adminManager=this.adminManager;
 
       await this.filterManager.init();
+      await window.updateManager.init();
+      await this.applyWallpaper();
       await this.checkSession();
       this.attachGlobalEventListeners();
+      this.prefillSaved();
       this.updateConnectionStatus();
-      
-      window.addEventListener('online', () => this.updateConnectionStatus());
-      window.addEventListener('offline', () => this.updateConnectionStatus());
-
-      await this.backupManager.handleShareLink();
-
-      console.log('[App] Application initialisée avec succès');
-    } catch (error) {
-      console.error('[App] Erreur d\'initialisation:', error);
-      alert('Erreur d\'initialisation de l\'application: ' + error.message);
-    }
+      window.addEventListener('online', ()=>this.updateConnectionStatus());
+      window.addEventListener('offline', ()=>this.updateConnectionStatus());
+    }catch(e){ console.error(e); alert('Erreur d\'initialisation : '+e.message); }
   }
 
-  async registerServiceWorker() {
-    if ('serviceWorker' in navigator) {
-      try {
-        const registration = await navigator.serviceWorker.register('./sw.js');
-        console.log('[App] Service Worker enregistré:', registration.scope);
-      } catch (error) {
-        console.warn('[App] Service Worker non enregistré:', error);
-      }
-    }
+  async registerServiceWorker(){ if('serviceWorker' in navigator){ try{ await navigator.serviceWorker.register('./sw.js'); }catch(e){} } }
+
+  async applyWallpaper(){
+    const url=await DBUtils.getWallpaper();
+    document.body.style.backgroundImage = url ? `url(${url})` : '';
+    document.body.style.backgroundSize='cover';
+    document.body.style.backgroundAttachment='fixed';
   }
 
-  async checkSession() {
-    const sessionUser = sessionStorage.getItem('currentUser');
-    if (sessionUser) {
-      try {
-        const user = JSON.parse(sessionUser);
-        const dbUser = await DBUtils.getUser(user.username);
-        
-        if (dbUser && dbUser.status === 'approved') {
-          this.currentUser = dbUser;
-          this.adminManager.setCurrentUser(dbUser);
-          this.showMainScreen();
-          await this.filterManager.renderResults();
-          return;
-        }
-      } catch (error) {
-        console.error('[App] Erreur vérification session:', error);
-      }
-    }
-    this.showLoginScreen();
+  prefillSaved(){
+    const creds=DBUtils.getCredentials();
+    const fill=document.getElementById('fillSaved');
+    if(creds){
+      document.getElementById('loginUsername').value=creds.username;
+      document.getElementById('rememberMe').checked=true;
+      if(fill){ fill.style.display='block'; fill.onclick=()=>{ document.getElementById('loginPassword').value=creds.password; }; }
+    } else if(fill) fill.style.display='none';
   }
 
-  attachGlobalEventListeners() {
-    const loginForm = document.getElementById('loginForm');
-    if (loginForm) {
-      loginForm.addEventListener('submit', (e) => this.handleLogin(e));
-    }
-
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-      logoutBtn.addEventListener('click', () => this.handleLogout());
-    }
-
-    const modalClose = document.getElementById('modalClose');
-    if (modalClose) {
-      modalClose.addEventListener('click', () => {
-        document.getElementById('faultModal').classList.remove('active');
-      });
-    }
-
-    window.addEventListener('click', (e) => {
-      if (e.target.classList.contains('modal')) {
-        e.target.classList.remove('active');
-      }
-    });
-
-    const filterCode = document.getElementById('filterCode');
-    const filterSearch = document.getElementById('filterSearch');
-    
-    if (filterCode) {
-      filterCode.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') this.filterManager.applyFilters();
-      });
-    }
-    
-    if (filterSearch) {
-      filterSearch.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') this.filterManager.applyFilters();
-      });
-    }
+  attachGlobalEventListeners(){
+    document.getElementById('loginForm').addEventListener('submit', e=>this.handleLogin(e));
+    document.getElementById('logoutBtn').addEventListener('click', ()=>this.handleLogout());
+    document.getElementById('modalClose').addEventListener('click', ()=>document.getElementById('faultModal').classList.remove('active'));
+    document.getElementById('openRequest').addEventListener('click', ()=>document.getElementById('requestModal').classList.add('active'));
+    document.getElementById('requestClose').addEventListener('click', ()=>document.getElementById('requestModal').classList.remove('active'));
+    document.getElementById('requestForm').addEventListener('submit', e=>this.handleRequest(e));
+    window.addEventListener('click', e=>{ if(e.target.classList.contains('modal')) e.target.classList.remove('active'); });
+    const fc=document.getElementById('filterCode'); if(fc) fc.addEventListener('keypress', e=>{ if(e.key==='Enter') this.filterManager.applyFilters(); });
+    const fs=document.getElementById('filterSearch'); if(fs) fs.addEventListener('keypress', e=>{ if(e.key==='Enter') this.filterManager.applyFilters(); });
   }
 
-  async handleLogin(e) {
+  async handleRequest(e){
     e.preventDefault();
-    
-    const username = document.getElementById('loginUsername').value.trim();
-    const password = document.getElementById('loginPassword').value;
-    const errorElement = document.getElementById('loginError');
+    const info=document.getElementById('requestInfo');
+    const firstName=document.getElementById('reqFirstName').value.trim();
+    const username=document.getElementById('reqUsername').value.trim();
+    const password=document.getElementById('reqPassword').value;
+    if(!firstName||!username||!password){ info.textContent='Prénom, identifiant et mot de passe obligatoires'; return; }
+    if(await DBUtils.getUser(username)){ info.textContent='Identifiant déjà existant'; return; }
+    const passwordHash=await DBUtils.hashPassword(password);
+    await DBUtils.createAccessRequest({ firstName, username, passwordHash, email:document.getElementById('reqEmail').value.trim(), message:document.getElementById('reqMessage').value.trim() });
+    info.style.color='#065f46';
+    info.textContent='✅ Demande envoyée à l\'administrateur (notification immédiate)';
+    document.getElementById('requestForm').reset();
+  }
 
-    if (!username || !password) {
-      errorElement.textContent = 'Veuillez remplir tous les champs';
-      return;
-    }
-
-    try {
-      const user = await DBUtils.getUser(username);
-      
-      if (!user) {
-        errorElement.textContent = 'Utilisateur non trouvé. Contactez un administrateur.';
-        return;
-      }
-
-      if (user.status === 'revoked') {
-        errorElement.textContent = 'Votre accès a été révoqué. Contactez un administrateur.';
-        return;
-      }
-
-      if (user.status === 'pending') {
-        errorElement.textContent = 'Votre compte est en attente d\'approbation.';
-        return;
-      }
-
-      const validPassword = await DBUtils.verifyPassword(username, password);
-      if (!validPassword) {
-        errorElement.textContent = 'Mot de passe incorrect';
-        return;
-      }
-
-      this.currentUser = user;
-      await DBUtils.updateUser(username, { lastLogin: Date.now() });
+  async handleLogin(e){
+    e.preventDefault();
+    const username=document.getElementById('loginUsername').value.trim();
+    const password=document.getElementById('loginPassword').value;
+    const err=document.getElementById('loginError'); err.textContent='';
+    try{
+      const user=await DBUtils.getUser(username);
+      if(!user){ err.textContent='Utilisateur non trouvé. Faites une demande d\'accès.'; return; }
+      if(user.status==='revoked'){ err.textContent='Accès révoqué. Contactez l\'administrateur.'; return; }
+      if(user.status==='pending'){ err.textContent='Compte en attente d\'autorisation.'; return; }
+      if(!(await DBUtils.verifyPassword(username,password))){ err.textContent='Mot de passe incorrect'; return; }
+      this.currentUser=user;
+      await DBUtils.updateUser(username,{lastLogin:Date.now()});
       sessionStorage.setItem('currentUser', JSON.stringify(user));
-      
+      if(document.getElementById('rememberMe').checked) DBUtils.saveCredentials(username,password); else DBUtils.clearCredentials();
       this.adminManager.setCurrentUser(user);
-      errorElement.textContent = '';
-      
       this.showMainScreen();
       await this.filterManager.renderResults();
-      
-    } catch (error) {
-      console.error('[App] Erreur de connexion:', error);
-      errorElement.textContent = 'Erreur de connexion: ' + error.message;
-    }
+      if(user.role==='admin'){
+        const n=await DBUtils.pendingCount();
+        if(n>0){ backupManager.showNotification(`📨 ${n} demande(s) d'accès en attente`, 'info'); this.adminManager.refreshBadge(); }
+      }
+    }catch(er){ err.textContent='Erreur : '+er.message; }
   }
 
-  handleLogout() {
-    if (!confirm('Voulez-vous vraiment vous déconnecter ?')) return;
-    
-    this.currentUser = null;
-    sessionStorage.removeItem('currentUser');
-    this.adminManager.setCurrentUser(null);
-    this.showLoginScreen();
-    
+  handleLogout(){
+    if(!confirm('Se déconnecter ?')) return;
+    this.currentUser=null; sessionStorage.removeItem('currentUser');
+    this.adminManager.setCurrentUser(null); this.showLoginScreen();
     document.getElementById('loginForm').reset();
-    document.getElementById('loginError').textContent = '';
+    document.getElementById('loginPassword').value='';
+    this.prefillSaved();
   }
 
-  showLoginScreen() {
-    document.getElementById('loginScreen').classList.add('active');
-    document.getElementById('mainScreen').classList.remove('active');
+  async checkSession(){
+    const s=sessionStorage.getItem('currentUser');
+    if(s){ try{
+      const u=JSON.parse(s); const dbU=await DBUtils.getUser(u.username);
+      if(dbU&&dbU.status==='approved'){ this.currentUser=dbU; this.adminManager.setCurrentUser(dbU); this.showMainScreen(); await this.filterManager.renderResults(); return; }
+    }catch(e){} }
+    this.showLoginScreen();
   }
 
-  showMainScreen() {
-    document.getElementById('loginScreen').classList.remove('active');
-    document.getElementById('mainScreen').classList.add('active');
-  }
+  showLoginScreen(){ document.getElementById('loginScreen').classList.add('active'); document.getElementById('mainScreen').classList.remove('active'); }
+  showMainScreen(){ document.getElementById('loginScreen').classList.remove('active'); document.getElementById('mainScreen').classList.add('active'); }
 
-  updateConnectionStatus() {
-    const statusElement = document.getElementById('connectionStatus');
-    if (!statusElement) return;
-
-    if (navigator.onLine) {
-      statusElement.textContent = '● En ligne';
-      statusElement.parentElement.classList.add('online');
-    } else {
-      statusElement.textContent = '● Hors ligne';
-      statusElement.parentElement.classList.remove('online');
-    }
+  updateConnectionStatus(){
+    const el=document.getElementById('connectionStatus'); if(!el) return;
+    el.textContent = navigator.onLine ? '● En ligne (4G/5G/WiFi)' : '● Hors ligne (cache local)';
+    el.parentElement.classList.toggle('online', navigator.onLine);
   }
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  const app = new AutoDiagApp();
-  window.autoDiagApp = app;
-  app.init();
-});
-
-const style = document.createElement('style');
-style.textContent = `
-  @keyframes slideIn {
-    from { transform: translateX(400px); opacity: 0; }
-    to { transform: translateX(0); opacity: 1; }
-  }
-  @keyframes slideOut {
-    from { transform: translateX(0); opacity: 1; }
-    to { transform: translateX(400px); opacity: 0; }
-  }
-`;
-document.head.appendChild(style);
+window.applyWallpaper = async ()=>{ if(window.autoDiagApp) await window.autoDiagApp.applyWallpaper(); };
+document.addEventListener('DOMContentLoaded', ()=>{ const app=new AutoDiagApp(); window.autoDiagApp=app; app.init(); });
+const st=document.createElement('style');
+st.textContent='@keyframes slideIn{from{transform:translateX(400px);opacity:0}to{transform:translateX(0);opacity:1}}@keyframes slideOut{from{transform:translateX(0);opacity:1}to{transform:translateX(400px);opacity:0}}';
+document.head.appendChild(st);
