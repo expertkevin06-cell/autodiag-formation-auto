@@ -24,7 +24,16 @@ class FilterManager {
     const ss=document.getElementById('filterEngineSpec'); if(!ss)return;
     ss.innerHTML='<option value="">Toutes motorisations</option>';
     const brand=document.getElementById('filterBrand').value;
-    if(brand&&model){ const list=getEnginesByModel(brand,model); list.forEach(e=>{const o=document.createElement('option');o.value=e.name;o.textContent=`${e.name} (${e.ch} ch / ${e.kw} kW) - ${e.years}`;ss.appendChild(o);}); ss.disabled=list.length===0; } else ss.disabled=true;
+    if(brand&&model){
+      const list=getEnginesByModel(brand,model);
+      list.forEach(e=>{
+        const cc=window.inferCc?inferCc(e):0;
+        const o=document.createElement('option'); o.value=e.name;
+        o.textContent=`${e.name} (${e.ch} ch / ${e.kw} kW / ${cc?cc+' cm³':'élec'}) - ${e.years}`;
+        ss.appendChild(o);
+      });
+      ss.disabled=list.length===0;
+    } else ss.disabled=true;
   }
   syncEngineType(){ const e=this.getSelectedEngine(); if(e){ const t=document.getElementById('filterEngine'); if(t)t.value=e.type; } }
   getSelectedEngine(){
@@ -54,10 +63,10 @@ class FilterManager {
     const eng=this.getSelectedEngine();
     if(!eng){ sec.style.display='none'; return; }
     const tl={essence:'Essence',diesel:'Diesel (gazole)',hybride:'Hybride',electrique:'Électrique',flexfuel:'FlexFuel/GPL'};
-    let html=`<p><strong>Moteur :</strong> ${eng.name} | <strong>Type :</strong> ${tl[eng.type]} | <strong>Puissance :</strong> ${eng.ch} ch (${eng.kw} kW) | <strong>Années :</strong> ${eng.years}</p>`;
+    let html=`<p><strong>Moteur :</strong> ${eng.name} | <strong>Type :</strong> ${tl[eng.type]} | <strong>Puissance :</strong> ${eng.ch} ch (${eng.kw} kW) | <strong>Cylindrée :</strong> ${window.ccLabel?ccLabel(eng):(inferCc(eng)+' cm³')} | <strong>Années :</strong> ${eng.years}</p>`;
     if(window.verifyEngine){ const v=verifyEngine(eng); html+=`<h3>🧪 Auto-vérification</h3><ul>${v.checks.map(c=>`<li class="${c.ok?'verif-ok':'verif-ko'}">${c.ok?'✅':'⚠️'} ${c.label} : ${c.detail}</li>`).join('')}</ul>`; }
     if(eng.issues&&eng.issues.length) html+=`<h3>⚠️ Problèmes connus</h3><ul>${eng.issues.map(i=>`<li>${i}</li>`).join('')}</ul>`;
-    if(eng.recalls&&eng.recalls.length) html+=`<h3>📢 Campagnes</h3><ul>${eng.recalls.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+    if(eng.recalls&&eng.recalls.length) html+=`<h3>📢 Campagnes / bulletins</h3><ul>${eng.recalls.map(r=>`<li>${r}</li>`).join('')}</ul>`;
     title.textContent=`🚗 ${this.currentFilters.brand} ${this.currentFilters.model} - ${eng.name}`;
     body.innerHTML=html; sec.style.display='block';
   }
