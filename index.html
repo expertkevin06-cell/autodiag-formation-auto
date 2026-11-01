@@ -9,7 +9,7 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/styles.css">
 <style>
-  /* Fond d'écran admin : visible EN PERMANENCE à 50 % d'opacité */
+  /* Fond d'écran admin : visible EN PERMANENCE à l'opacité réglée */
   #wpLayer{position:fixed;inset:0;background-size:cover;background-position:center;opacity:.5;pointer-events:none;z-index:0}
   body>*:not(#wpLayer){position:relative;z-index:1}
   section,.login-container{background:rgba(255,255,255,.82)}
@@ -17,27 +17,32 @@
   .modal-content{background:rgba(255,255,255,.97)}
   .remember{display:flex;align-items:center;gap:.5rem;font-size:.875rem;margin:.5rem 0}
   .remember input{width:auto}
-  #fillSaved{font-size:.8rem;color:var(--secondary);cursor:pointer;text-decoration:underline;display:block;margin-top:.25rem}
   .btn-admin-wrap{position:relative}
   #adminBadge{position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;border-radius:10px;font-size:.65rem;padding:0 .35rem;display:none}
   .req-link{text-align:center;margin-top:.75rem;font-size:.875rem}
   .req-link a{color:var(--secondary);cursor:pointer;text-decoration:underline}
   .verif-ok{color:#065f46}.verif-ko{color:#991b1b}
+  #quickLoginWrap{margin-top:.5rem}
 </style>
 </head>
 <body>
 <div id="wpLayer"></div>
 
+  <!-- CONNEXION : cases TOUJOURS vides -->
   <div id="loginScreen" class="screen active">
     <div class="login-container">
       <div class="logo">🔧 AutoDiag Pro</div>
       <h1>Connexion</h1>
-      <form id="loginForm">
-        <div class="form-group"><label>Identifiant</label><input type="text" id="loginUsername" required autocomplete="off"></div>
-        <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" required autocomplete="off" placeholder="">
-          <span id="fillSaved" style="display:none">🔑 Mot de passe enregistré : remplir</span></div>
-        <label class="remember"><input type="checkbox" id="rememberMe"> Se souvenir de moi (stockage local)</label>
-        <button type="submit" class="btn btn-primary">Se connecter</button>
+      <form id="loginForm" autocomplete="off">
+        <div class="form-group"><label>Identifiant</label>
+          <input type="text" id="loginUsername" required autocomplete="off" placeholder="" value=""></div>
+        <div class="form-group"><label>Mot de passe</label>
+          <input type="password" id="loginPassword" required autocomplete="new-password" placeholder="" value=""></div>
+        <label class="remember"><input type="checkbox" id="rememberMe"> Se souvenir de moi (stockage local chiffré)</label>
+        <div id="quickLoginWrap" style="display:none">
+          <button type="button" id="quickLoginBtn" class="btn btn-secondary" style="width:100%">🔑 Connexion rapide (compte enregistré — identifiants masqués)</button>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top:.5rem">Se connecter</button>
         <p id="loginError" class="error"></p>
       </form>
       <p class="req-link">Pas de compte ? <a id="openRequest">Demander un accès à l'administrateur</a></p>
@@ -45,17 +50,19 @@
     </div>
   </div>
 
+  <!-- DEMANDE D'ACCÈS TIERS -->
   <div id="requestModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>📨 Demande d'accès</h2><button class="modal-close" id="requestClose">&times;</button></div>
-    <div class="modal-body"><form id="requestForm">
-      <div class="form-group"><label>Prénom *</label><input type="text" id="reqFirstName" required></div>
-      <div class="form-group"><label>Identifiant souhaité *</label><input type="text" id="reqUsername" required></div>
-      <div class="form-group"><label>Mot de passe souhaité *</label><input type="password" id="reqPassword" required autocomplete="off" placeholder=""></div>
-      <div class="form-group"><label>Email (optionnel)</label><input type="email" id="reqEmail"></div>
-      <div class="form-group"><label>Message (optionnel)</label><input type="text" id="reqMessage"></div>
+    <div class="modal-body"><form id="requestForm" autocomplete="off">
+      <div class="form-group"><label>Prénom *</label><input type="text" id="reqFirstName" required autocomplete="off"></div>
+      <div class="form-group"><label>Identifiant souhaité *</label><input type="text" id="reqUsername" required autocomplete="off"></div>
+      <div class="form-group"><label>Mot de passe souhaité *</label><input type="password" id="reqPassword" required autocomplete="new-password" placeholder=""></div>
+      <div class="form-group"><label>Email (optionnel)</label><input type="email" id="reqEmail" autocomplete="off"></div>
+      <div class="form-group"><label>Message (optionnel)</label><input type="text" id="reqMessage" autocomplete="off"></div>
       <button type="submit" class="btn btn-primary">Envoyer la demande</button>
       <p id="requestInfo" class="error"></p>
     </form></div></div></div>
 
+  <!-- ÉCRAN PRINCIPAL -->
   <div id="mainScreen" class="screen">
     <header><div class="header-content">
       <h1>🔧 AutoDiag Pro</h1>
@@ -109,7 +116,7 @@
   <div id="shareModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>📤 Partager</h2><button class="modal-close" id="shareClose">&times;</button></div>
     <div class="modal-body"><div class="share-options"><button id="generateLink" class="btn btn-primary">Générer un lien</button><button id="downloadAPK" class="btn btn-secondary">Instructions APK</button><button id="exportData" class="btn btn-secondary">Exporter données + fond d'écran</button></div><div id="shareResult" class="share-result"></div></div></div></div>
 
-  <footer><p>AutoDiag Pro v6 - Formation & Diagnostic multi-systèmes</p><p class="small">4G/5G/WiFi/Hors ligne - MàJ auto 30 j + NHTSA + flux</p></footer>
+  <footer><p>AutoDiag Pro v11 - Formation & Diagnostic multi-systèmes</p><p class="small">4G/5G/WiFi/Hors ligne - Identifiants jamais affichés</p></footer>
 
   <script src="js/data.js"></script>
   <script src="js/systems.js"></script>
