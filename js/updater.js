@@ -13,16 +13,15 @@ const NHTSA_FR = {
 function nhtsaSystem(comp){
   const c=(comp||'').toUpperCase();
   const label=NHTSA_FR[c]||"Système divers";
-  if(/AIR BAG|SEAT BELT|SIÈGE|CEINTURE/.test(c)) return {label,sys:'securite'};
-  if(/BRAKE|FREIN/.test(c)) return {label,sys:'freinage'};
-  if(/STEERING|DIRECTION/.test(c)) return {label,sys:'direction'};
-  if(/POWER TRAIN|TRANSMISSION/.test(c)) return {label,sys:'transmission'};
-  if(/BATTERY:CHARGING|CHARGE/.test(c)) return {label,sys:'charge'};
-  if(/BATTERY|ELECTRIC|BATTERIE/.test(c)) return {label,sys:'batterie'};
-  if(/BACK OVER|LANE|COLLISION|ADAS/.test(c)) return {label,sys:'adas'};
-  if(/SOFTWARE|VISIBILITY|LIGHTING|LOGICIEL/.test(c)) return {label,sys:'multimedia'};
-  if(/ELECTRICAL|ÉLECTRIQUE/.test(c)) return {label,sys:'electricite'};
-  if(/ENGINE|MOTEUR|FUEL|SUSPENSION/.test(c)) return {label,sys:'moteur'};
+  if(/AIR BAG|SEAT BELT/.test(c)) return {label,sys:'securite'};
+  if(/BRAKE/.test(c)) return {label,sys:'freinage'};
+  if(/STEERING/.test(c)) return {label,sys:'direction'};
+  if(/POWER TRAIN/.test(c)) return {label,sys:'transmission'};
+  if(/BATTERY:CHARGING|CHARGING/.test(c)) return {label,sys:'charge'};
+  if(/BATTERY|ELECTRIC/.test(c)) return {label,sys:'batterie'};
+  if(/BACK OVER|LANE|COLLISION/.test(c)) return {label,sys:'adas'};
+  if(/SOFTWARE|VISIBILITY|LIGHTING/.test(c)) return {label,sys:'multimedia'};
+  if(/ELECTRICAL/.test(c)) return {label,sys:'electricite'};
   return {label,sys:'moteur'};
 }
 
@@ -33,41 +32,38 @@ class UpdateManager {
 
   async refresh(manual){
     try{
+      // Resync base embarquée (inclut systems.js : nouvelles pannes + bulletins v9)
       for(const f of AUTO_DATA.faults) await db.put('faults', f);
       const added={faults:0,campaigns:0,models:0};
       try{ const r=await fetch(FEED_URL+'?t='+Date.now(),{cache:'no-store'}); if(r.ok) Object.assign(added, await this.mergeFeed(await r.json())); }catch(e){ console.warn('[UPD] feed offline OK'); }
       await this.applyExtras();
       await DBUtils.setSetting('lastUpdate', Date.now());
-      this.notify(`🔄 MàJ ${manual?'manuelle':'auto'} : +${added.faults} pannes, +${added.campaigns} campagnes, +${added.models} motorisations`,'success');
+      this.notify(`🔄 MàJ ${manual?'manuelle':'auto'} : +${added.faults} pannes, +${added.campaigns} bulletins/campagnes, +${added.models} motorisations`,'success');
       if(window.filterManager) window.filterManager.renderResults();
       return true;
     }catch(e){ this.notify('Erreur MàJ : '+e.message,'error'); return false; }
   }
 
-  // ---- Connecteur NHTSA (rappels US traduits FR) ----
   async importNHTSA(){
     const f=window.filterManager?window.filterManager.currentFilters:{};
     if(!f.brand||!f.model){ this.notify('Sélectionnez marque + modèle puis relancez','error'); return 0; }
     try{
-      const url=`https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(f.brand)}&model=${encodeURIComponent(f.model)}`;
-      const r=await fetch(url,{cache:'no-store'});
+      const r=await fetch(`https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(f.brand)}&model=${encodeURIComponent(f.model)}`,{cache:'no-store'});
       if(!r.ok) throw new Error('HTTP '+r.status);
-      const j=await r.json();
-      let n=0;
+      const j=await r.json(); let n=0;
       for(const rec of (j.results||[]).slice(0,60)){
         const id='NHTSA-'+(rec.NHTSACampaignNumber||rec.Id);
         if(await db.get('faults',id)) continue;
         const {label,sys}=nhtsaSystem(rec.Component);
-        await db.put('faults',{ id, code:id, title:`Rappel NHTSA : ${label} — ${f.brand} ${f.model}`, type:'electronique', component:label, system:sys, brands:[f.brand], modelRefs:[f.model], engines:['essence','diesel','hybride','electrique'], symptoms:[rec.Summary||'Défaut répertorié NHTSA'], causes:[rec.DefectSummary||'Voir campagne'], consequences:[rec.ConsequenceSummary||'Risque sécurité'], diagnostics:['Consulter campagne NHTSA '+ (rec.NHTSACampaignNumber||'')], repairs:[rec.RemedySummary||'Réparation concession'], tsb:['Source NHTSA traduite FR : '+label], recalls:['Campagne NHTSA '+(rec.NHTSACampaignNumber||'')], severity:'important', cost:'0€ (rappel)' });
+        await db.put('faults',{ id, code:id, title:`Rappel NHTSA : ${label} — ${f.brand} ${f.model}`, type:'electronique', component:label, system:sys, brands:[f.brand], modelRefs:[f.model], engines:['essence','diesel','hybride','electrique'], symptoms:[rec.Summary||'Défaut répertorié NHTSA'], causes:[rec.DefectSummary||'Voir campagne'], consequences:[rec.ConsequenceSummary||'Risque sécurité'], diagnostics:['Consulter campagne NHTSA '+(rec.NHTSACampaignNumber||'')], repairs:[rec.RemedySummary||'Réparation concession'], tsb:['Source NHTSA traduite FR : '+label], recalls:['Campagne NHTSA '+(rec.NHTSACampaignNumber||'')], severity:'important', cost:'0€ (rappel)' });
         n++;
       }
-      this.notify(`🌐 NHTSA : ${n} rappel(s) importé(s) pour ${f.brand} ${f.model}`,'success');
+      this.notify(`🌐 NHTSA : ${n} rappel(s) importé(s)`,'success');
       if(window.filterManager) window.filterManager.renderResults();
       return n;
-    }catch(e){ this.notify('NHTSA inaccessible : '+e.message+' (utilisez feed.json)','error'); return 0; }
+    }catch(e){ this.notify('NHTSA inaccessible : '+e.message,'error'); return 0; }
   }
 
-  // ---- Nouveaux modèles commercialisés (2017→2027) non répertoriés ----
   async importNewModels(){
     const f=window.filterManager?window.filterManager.currentFilters:{};
     if(!f.brand){ this.notify('Sélectionnez une marque','error'); return 0; }
@@ -85,26 +81,31 @@ class UpdateManager {
           await this.persistExtra('extraModels',{brand:f.brand,model:name,engines:[]});
         }
       }
-      this.notify(`🆕 ${n} nouveau(x) modèle(s) ${f.brand} importé(s) (motorisations à compléter via feed.json)`,'success');
-      if(window.filterManager){ window.filterManager.updateModelSelect(f.brand); }
+      this.notify(`🆕 ${n} nouveau(x) modèle(s) importé(s)`,'success');
+      if(window.filterManager) window.filterManager.updateModelSelect(f.brand);
       return n;
     }catch(e){ this.notify('Modèles NHTSA inaccessibles : '+e.message,'error'); return 0; }
   }
 
-  // ---- Flux JSON externe (Safety Gate UE, sites spécialisés, feed personnalisé) ----
   async importFromUrl(url){
-    try{ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const added=await this.mergeFeed(await r.json()); this.notify(`📥 Flux importé : +${added.faults} pannes, +${added.campaigns} campagnes, +${added.models} motorisations`,'success'); if(window.filterManager) window.filterManager.renderResults(); return added; }
+    try{ const r=await fetch(url,{cache:'no-store'}); if(!r.ok) throw new Error('HTTP '+r.status); const a=await this.mergeFeed(await r.json()); this.notify(`📥 Flux : +${a.faults} pannes, +${a.campaigns} bulletins`,'success'); if(window.filterManager) window.filterManager.renderResults(); return a; }
     catch(e){ this.notify('Flux inaccessible : '+e.message,'error'); return null; }
   }
   async importFromFile(file){
-    try{ const added=await this.mergeFeed(JSON.parse(await file.text())); this.notify(`📥 Fichier importé : +${added.faults} pannes`,'success'); if(window.filterManager) window.filterManager.renderResults(); return added; }
+    try{ const a=await this.mergeFeed(JSON.parse(await file.text())); this.notify(`📥 Fichier : +${a.faults} pannes, +${a.campaigns} bulletins`,'success'); if(window.filterManager) window.filterManager.renderResults(); return a; }
     catch(e){ this.notify('Fichier invalide : '+e.message,'error'); return null; }
   }
 
+  // Fusion : faults + campaigns + BULLETINS (nouvelle clé) + models
   async mergeFeed(feed){
     const c={faults:0,campaigns:0,models:0}; if(!feed) return c;
     if(Array.isArray(feed.faults)) for(const f of feed.faults){ if(f&&f.id){ f.brands=f.brands||['ALL']; await db.put('faults',f); if(!AUTO_DATA.faults.some(x=>x.id===f.id)) AUTO_DATA.faults.push(f); c.faults++; } }
-    if(Array.isArray(feed.campaigns)) for(const cam of feed.campaigns){ if(!cam||!cam.id) continue; if(!AUTO_DATA.campaigns.some(x=>x.id===cam.id)){ AUTO_DATA.campaigns.push(cam); c.campaigns++; await this.persistExtra('extraCampaigns',cam); } }
+    const cams=(feed.campaigns||[]).concat(feed.bulletins||[]);
+    for(const cam of cams){
+      if(!cam||!cam.id) continue;
+      if(!cam.bulletin && cam.ref) cam.bulletin=cam.ref;
+      if(!AUTO_DATA.campaigns.some(x=>x.id===cam.id)){ AUTO_DATA.campaigns.push(cam); c.campaigns++; await this.persistExtra('extraCampaigns',cam); }
+    }
     if(Array.isArray(feed.models)) for(const m of feed.models){ if(!m||!m.brand||!m.model) continue; if(this.mergeModel(m)){ c.models++; await this.persistExtra('extraModels',m); } }
     return c;
   }
