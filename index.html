@@ -9,7 +9,13 @@
 <link rel="icon" href="icons/icon-192.png">
 <link rel="stylesheet" href="css/styles.css">
 <style>
-  .remember{display:flex;align-items:center;gap:.5rem;font-size:.875rem;margin:.5rem 0;color:var(--text)}
+  /* Fond d'écran admin : visible EN PERMANENCE à 50 % d'opacité */
+  #wpLayer{position:fixed;inset:0;background-size:cover;background-position:center;opacity:.5;pointer-events:none;z-index:0}
+  body>*:not(#wpLayer){position:relative;z-index:1}
+  section,.login-container{background:rgba(255,255,255,.82)}
+  header{background:rgba(30,58,138,.94)}
+  .modal-content{background:rgba(255,255,255,.97)}
+  .remember{display:flex;align-items:center;gap:.5rem;font-size:.875rem;margin:.5rem 0}
   .remember input{width:auto}
   #fillSaved{font-size:.8rem;color:var(--secondary);cursor:pointer;text-decoration:underline;display:block;margin-top:.25rem}
   .btn-admin-wrap{position:relative}
@@ -20,16 +26,15 @@
 </style>
 </head>
 <body>
-  <!-- CONNEXION -->
+<div id="wpLayer"></div>
+
   <div id="loginScreen" class="screen active">
     <div class="login-container">
       <div class="logo">🔧 AutoDiag Pro</div>
       <h1>Connexion</h1>
       <form id="loginForm">
-        <div class="form-group"><label>Identifiant</label>
-          <input type="text" id="loginUsername" required autocomplete="off"></div>
-        <div class="form-group"><label>Mot de passe</label>
-          <input type="password" id="loginPassword" required autocomplete="off" placeholder="">
+        <div class="form-group"><label>Identifiant</label><input type="text" id="loginUsername" required autocomplete="off"></div>
+        <div class="form-group"><label>Mot de passe</label><input type="password" id="loginPassword" required autocomplete="off" placeholder="">
           <span id="fillSaved" style="display:none">🔑 Mot de passe enregistré : remplir</span></div>
         <label class="remember"><input type="checkbox" id="rememberMe"> Se souvenir de moi (stockage local)</label>
         <button type="submit" class="btn btn-primary">Se connecter</button>
@@ -40,46 +45,36 @@
     </div>
   </div>
 
-  <!-- DEMANDE D'ACCÈS TIERS -->
-  <div id="requestModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header"><h2>📨 Demande d'accès</h2><button class="modal-close" id="requestClose">&times;</button></div>
-      <div class="modal-body">
-        <form id="requestForm">
-          <div class="form-group"><label>Prénom *</label><input type="text" id="reqFirstName" required></div>
-          <div class="form-group"><label>Identifiant souhaité *</label><input type="text" id="reqUsername" required></div>
-          <div class="form-group"><label>Mot de passe souhaité *</label><input type="password" id="reqPassword" required autocomplete="off" placeholder=""></div>
-          <div class="form-group"><label>Email (optionnel)</label><input type="email" id="reqEmail"></div>
-          <div class="form-group"><label>Message (optionnel)</label><input type="text" id="reqMessage"></div>
-          <button type="submit" class="btn btn-primary">Envoyer la demande</button>
-          <p id="requestInfo" class="error"></p>
-        </form>
-      </div>
-    </div>
-  </div>
+  <div id="requestModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>📨 Demande d'accès</h2><button class="modal-close" id="requestClose">&times;</button></div>
+    <div class="modal-body"><form id="requestForm">
+      <div class="form-group"><label>Prénom *</label><input type="text" id="reqFirstName" required></div>
+      <div class="form-group"><label>Identifiant souhaité *</label><input type="text" id="reqUsername" required></div>
+      <div class="form-group"><label>Mot de passe souhaité *</label><input type="password" id="reqPassword" required autocomplete="off" placeholder=""></div>
+      <div class="form-group"><label>Email (optionnel)</label><input type="email" id="reqEmail"></div>
+      <div class="form-group"><label>Message (optionnel)</label><input type="text" id="reqMessage"></div>
+      <button type="submit" class="btn btn-primary">Envoyer la demande</button>
+      <p id="requestInfo" class="error"></p>
+    </form></div></div></div>
 
-  <!-- ÉCRAN PRINCIPAL -->
   <div id="mainScreen" class="screen">
-    <header>
-      <div class="header-content">
-        <h1>🔧 AutoDiag Pro</h1>
-        <div class="header-actions">
-          <span id="userDisplay"></span>
-          <span class="btn-admin-wrap"><button id="adminBtn" class="btn btn-icon" style="display:none;">⚙️</button><span id="adminBadge">0</span></span>
-          <button id="updateBtn" class="btn btn-icon" title="Mise à jour manuelle" style="display:none;">🔄</button>
-          <button id="backupBtn" class="btn btn-icon" title="Sauvegarde">💾</button>
-          <button id="logoutBtn" class="btn btn-icon" title="Déconnexion">🚪</button>
-        </div>
-      </div>
-    </header>
+    <header><div class="header-content">
+      <h1>🔧 AutoDiag Pro</h1>
+      <div class="header-actions">
+        <span id="userDisplay"></span>
+        <span class="btn-admin-wrap"><button id="adminBtn" class="btn btn-icon" style="display:none">⚙️</button><span id="adminBadge">0</span></span>
+        <button id="updateBtn" class="btn btn-icon" title="Mise à jour manuelle" style="display:none">🔄</button>
+        <button id="backupBtn" class="btn btn-icon" title="Sauvegarde">💾</button>
+        <button id="logoutBtn" class="btn btn-icon" title="Déconnexion">🚪</button>
+      </div></div></header>
     <main>
       <section class="filters-section">
         <h2>🔍 Filtres de recherche</h2>
         <div class="filters-grid">
           <div class="form-group"><label>Marque</label><select id="filterBrand"><option value="">Toutes les marques</option></select></div>
           <div class="form-group"><label>Modèle</label><select id="filterModel" disabled><option value="">Tous les modèles</option></select></div>
-          <div class="form-group"><label>Motorisation précise (puissance)</label><select id="filterEngineSpec" disabled><option value="">Toutes motorisations</option></select></div>
+          <div class="form-group"><label>Motorisation précise</label><select id="filterEngineSpec" disabled><option value="">Toutes motorisations</option></select></div>
           <div class="form-group"><label>Type motorisation</label><select id="filterEngine"><option value="">Tous types</option><option value="essence">Essence</option><option value="flexfuel">FlexFuel / GPL</option><option value="diesel">Diesel</option><option value="hybride">Hybride</option><option value="electrique">Électrique</option></select></div>
+          <div class="form-group"><label>Système</label><select id="filterSystem"><option value="">Tous systèmes</option></select></div>
           <div class="form-group"><label>Type de panne</label><select id="filterType"><option value="">Tous types</option><option value="mecanique">Mécanique</option><option value="electrique">Électrique</option><option value="electronique">Électronique</option></select></div>
           <div class="form-group"><label>Composant</label><select id="filterComponent"><option value="">Tous composants</option></select></div>
           <div class="form-group"><label>Code défaut OBD</label><input type="text" id="filterCode" placeholder="Ex: P0300"></div>
@@ -87,12 +82,12 @@
           <div class="form-group filter-actions"><button id="applyFilters" class="btn btn-primary">Appliquer</button><button id="resetFilters" class="btn btn-secondary">Réinitialiser</button></div>
         </div>
       </section>
-      <section id="engineInfoSection" class="engine-info" style="display:none;"><h2 id="engineInfoTitle"></h2><div id="engineInfoBody"></div></section>
+      <section id="engineInfoSection" class="engine-info" style="display:none"><h2 id="engineInfoTitle"></h2><div id="engineInfoBody"></div></section>
       <section class="results-section">
         <h2>📋 Résultats <span id="resultsCount" class="badge">0</span></h2>
         <div id="campaignsList"></div>
         <div id="resultsList" class="results-list"></div>
-        <div id="noResults" class="no-results" style="display:none;">Aucune panne ne correspond à vos critères.</div>
+        <div id="noResults" class="no-results" style="display:none">Aucune panne ne correspond à vos critères.</div>
       </section>
     </main>
   </div>
@@ -105,7 +100,7 @@
         <button class="tab-btn active" data-tab="pending">📨 Demandes</button>
         <button class="tab-btn" data-tab="users">👥 Utilisateurs</button>
         <button class="tab-btn" data-tab="data">📊 Données & MàJ</button>
-        <button class="tab-btn" data-tab="perso">🖼️ Personnalisation</button>
+        <button class="tab-btn" data-tab="perso">🖼️ Fond d'écran</button>
         <button class="tab-btn" data-tab="share">📤 Partage</button>
       </div>
       <div id="adminContent"></div>
@@ -114,9 +109,10 @@
   <div id="shareModal" class="modal"><div class="modal-content"><div class="modal-header"><h2>📤 Partager</h2><button class="modal-close" id="shareClose">&times;</button></div>
     <div class="modal-body"><div class="share-options"><button id="generateLink" class="btn btn-primary">Générer un lien</button><button id="downloadAPK" class="btn btn-secondary">Instructions APK</button><button id="exportData" class="btn btn-secondary">Exporter données + fond d'écran</button></div><div id="shareResult" class="share-result"></div></div></div></div>
 
-  <footer><p>AutoDiag Pro v5 - Formation & Diagnostic Automobile</p><p class="small">4G / 5G / WiFi / Hors ligne - Mise à jour auto 30 jours</p></footer>
+  <footer><p>AutoDiag Pro v6 - Formation & Diagnostic multi-systèmes</p><p class="small">4G/5G/WiFi/Hors ligne - MàJ auto 30 j + NHTSA + flux</p></footer>
 
   <script src="js/data.js"></script>
+  <script src="js/systems.js"></script>
   <script src="js/db.js"></script>
   <script src="js/verify.js"></script>
   <script src="js/updater.js"></script>
