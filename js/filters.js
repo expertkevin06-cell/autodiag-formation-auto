@@ -29,8 +29,8 @@ class FilterManager {
   syncEngineType(){ const e=this.getSelectedEngine(); if(e){ const t=document.getElementById('filterEngine'); if(t)t.value=e.type; } }
   getSelectedEngine(){
     const g=id=>(document.getElementById(id)||{}).value||'';
-    const b=g('filterBrand'),m=g('filterModel'),s=g('filterEngineSpec');
-    if(!s)return null; return getEnginesByModel(b,m).find(e=>e.name===s)||null;
+    const s=g('filterEngineSpec'); if(!s)return null;
+    return getEnginesByModel(g('filterBrand'),g('filterModel')).find(e=>e.name===s)||null;
   }
   updateComponentSelectByType(t){ const s=document.getElementById('filterComponent'); if(!s)return; s.innerHTML='<option value="">Tous composants</option>'; [...new Set(getComponentsByType(t))].sort().forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;s.appendChild(o);}); }
   applyFilters(){
@@ -68,7 +68,7 @@ class FilterManager {
     const camps=getCampaigns(brand,model,engineSpec);
     if(!camps.length){ list.innerHTML=''; return; }
     const sev={critique:'🔴',important:'🟡',modéré:'🟢'};
-    list.innerHTML=`<h3 style="margin:.5rem 0">📢 Campagnes & bulletins (${camps.length})</h3>`+camps.map(c=>`<div class="campaign-card"><strong>${sev[c.severity]||''} ${c.title}</strong><p style="margin:.25rem 0"><small>${c.brands.join(', ')} | ${c.engines.join(', ')} | ${c.years}</small></p><p style="margin:0"><strong>Action :</strong> ${c.action}</p></div>`).join('');
+    list.innerHTML=`<h3 style="margin:.5rem 0">📢 Campagnes & bulletins techniques (${camps.length})</h3>`+camps.map(c=>`<div class="campaign-card"><strong>${sev[c.severity]||''} ${c.title}</strong><p style="margin:.25rem 0"><small>${c.brands.join(', ')} | ${c.engines.join(', ')} | ${c.years}</small></p>${c.bulletin?`<p style="margin:.25rem 0"><small style="background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:.15rem .4rem">📋 ${c.bulletin}</small></p>`:''}<p style="margin:0"><strong>Action :</strong> ${c.action}</p></div>`).join('');
   }
   buildInfoCards(){
     const cards=[]; const {brand,model}=this.currentFilters; const eng=this.getSelectedEngine();
